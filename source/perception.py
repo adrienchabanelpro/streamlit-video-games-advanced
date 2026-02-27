@@ -1,24 +1,10 @@
 import streamlit as st
-import os 
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.patches as patches
-import subprocess
-import random
-from style import apply_style
-from presentation import presentation_et_objectif
-from methodologie import methodologie
-from dataviz import dataviz
-from  feature_engineering import feature_engineering
-from modelisation import modelisation
-from perspectives import perspectives
-from prediction import prediction_page
-from analyse_avis_utilisateurs import predict_user_reviews
+import os
 import plotly.graph_objects as go
 import base64
 from io import BytesIO
 from PIL import Image
+from analyse_avis_utilisateurs import predict_user_reviews
 
 
 
