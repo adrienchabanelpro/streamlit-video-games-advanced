@@ -31,8 +31,9 @@ def  perception():
     
     if uploaded_file is not None:
         if st.button("Lancer la prédiction"):
-            data, positive_percentage, negative_percentage = predict_user_reviews(uploaded_file)
-        
+            with st.spinner("Analyse des avis..."):
+                data, positive_percentage, negative_percentage = predict_user_reviews(uploaded_file)
+
             if data is not None and positive_percentage is not None:
                 st.write(f"Pourcentage de réponses positives (1) : {positive_percentage:.2f}%")
                 st.write(f"Pourcentage de réponses négatives (0) : {negative_percentage:.2f}%")

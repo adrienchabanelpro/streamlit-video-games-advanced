@@ -159,24 +159,28 @@ def prediction_page():
     publisher_input, genre_input, platform_input, input_data = get_input(df_features)
 
     if st.sidebar.button('Prédire'):
-        # Obtenir les caractéristiques
-        df_input_data = get_features(input_data, df_features, genre_input, platform_input)
+        with st.spinner("Calcul de la prediction..."):
+            try:
+                # Obtenir les caractéristiques
+                df_input_data = get_features(input_data, df_features, genre_input, platform_input)
 
-        # Standardiser les données
-        numerical_features, df_input_data_transformed = standardization(df_input_data, publisher_input, df_top)
+                # Standardiser les données
+                numerical_features, df_input_data_transformed = standardization(df_input_data, publisher_input, df_top)
 
-        # Prédire en fonction des entrées utilisateur
-        user_pred = model.predict(df_input_data_transformed)
+                # Prédire en fonction des entrées utilisateur
+                user_pred = model.predict(df_input_data_transformed)
 
-        # Superposer la prédiction sur l'image de la borne d'arcade
-        st.markdown(
-        f"""
-        <div class="arcade-container">
-            <div class="arcade-screen">Prédiction pour les ventes:<br><br> {user_pred[0]:.4f} millions d'unités</div>
-        </div>
-        """, 
-        unsafe_allow_html=True
-        )
+                # Superposer la prédiction sur l'image de la borne d'arcade
+                st.markdown(
+                f"""
+                <div class="arcade-container">
+                    <div class="arcade-screen">Prédiction pour les ventes:<br><br> {user_pred[0]:.4f} millions d'unités</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+                )
+            except Exception as e:
+                st.error(f"Erreur lors de la prediction : {e}")
     else:
         st.markdown(
         f"""

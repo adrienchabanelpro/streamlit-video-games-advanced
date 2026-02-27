@@ -61,26 +61,36 @@ def predict_user_reviews(uploaded_file):
     log_reg, tfidf_vectorizer = _load_sentiment_models()
 
     if uploaded_file is not None:
-        # Lecture du fichier CSV
-        data = pd.read_csv(uploaded_file)
+        try:
+            # Lecture du fichier CSV
+            data = pd.read_csv(uploaded_file)
+        except Exception as e:
+            st.error(f"Erreur lors de la lecture du fichier CSV : {e}")
+            return None, None, None
+
         # Vérifier que la colonne 'user_review' existe
         if 'user_review' in data.columns:
-            # Nettoyer les critiques utilisateur
-            data['cleaned_user_review'] = data['user_review'].apply(clean_text)
+            try:
+                # Nettoyer les critiques utilisateur
+                data['cleaned_user_review'] = data['user_review'].apply(clean_text)
 
-            # Vectoriser les critiques utilisateur nettoyées
-            X = tfidf_vectorizer.transform(data['cleaned_user_review'])
+                # Vectoriser les critiques utilisateur nettoyées
+                X = tfidf_vectorizer.transform(data['cleaned_user_review'])
 
-            # Faire des prédictions
-            predictions = log_reg.predict(X)
-            # Ajouter les prédictions au DataFrame
-            data['predictions'] = predictions
-            
-            # Calculer les pourcentages de prédictions positives et négatives
-            positive_percentage = (predictions == 1).mean() * 100
-            negative_percentage = (predictions == 0).mean() * 100
-            
-            return data, positive_percentage, negative_percentage
+                # Faire des prédictions
+                predictions = log_reg.predict(X)
+                # Ajouter les prédictions au DataFrame
+                data['predictions'] = predictions
+
+                # Calculer les pourcentages de prédictions positives et négatives
+                positive_percentage = (predictions == 1).mean() * 100
+                negative_percentage = (predictions == 0).mean() * 100
+
+                return data, positive_percentage, negative_percentage
+            except Exception as e:
+                st.error(f"Erreur lors de l'analyse des avis : {e}")
+                return None, None, None
         else:
+            st.warning("Le fichier CSV doit contenir une colonne 'user_review'.")
             return None, None, None
     return None, None, None

@@ -21,7 +21,8 @@ def load_dataviz_data():
 
 
 def dataviz():
-    df = load_dataviz_data()
+    with st.spinner("Chargement des visualisations..."):
+        df = load_dataviz_data()
 
     st.title("📊 Page de DataViz 🎮")
 
