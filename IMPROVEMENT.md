@@ -132,7 +132,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 - [ ] **Proper logging** — Replace print statements with Python's `logging` module.
 
 ### Medium Effort
-- [ ] **Unit tests** — Write tests with `pytest` for:
+- [x] **Unit tests** — Write tests with `pytest` for:
   - Data loading and preprocessing functions
   - Feature engineering pipeline
   - Model prediction pipeline
@@ -213,7 +213,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 | ~~8~~ | NLP | ~~Transformer-based sentiment~~ | High | Medium | **DONE** |
 | ~~9~~ | UI | ~~Dark mode + retro neon theme~~ | Medium | Medium | **DONE** |
 | 10 | Data | Steam/IGDB API integration | High | Medium |
-| 11 | Code | Unit tests (pytest) | Medium | Medium |
+| ~~11~~ | Code | ~~Unit tests (pytest)~~ | Medium | Medium | **DONE** |
 | 12 | Deploy | Streamlit Cloud deployment | High | Low |
 | 13 | Feature | What-if analysis tool | Medium | Medium |
 | 14 | Feature | Recommendation engine | High | Medium |

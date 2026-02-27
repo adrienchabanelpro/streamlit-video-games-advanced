@@ -21,3 +21,4 @@ xgboost
 catboost
 transformers
 torch
+pytest
