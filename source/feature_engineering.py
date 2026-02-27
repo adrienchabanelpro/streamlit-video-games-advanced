@@ -3,6 +3,13 @@ import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
 
+_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+
+
+@st.cache_data
+def _load_feature_data():
+    return pd.read_csv(os.path.join(_BASE_DIR, 'data', 'df_topfeats.csv'))
+
 
 
 
@@ -103,8 +110,5 @@ def feature_engineering():
     """)
 
 
-    df_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'df_topfeats.csv')
-    data = pd.read_csv(df_path)
-
-
+    data = _load_feature_data()
     st.write(data)

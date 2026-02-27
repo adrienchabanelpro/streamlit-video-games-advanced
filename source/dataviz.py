@@ -6,24 +6,22 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
-def dataviz():
-    df_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'Ventes_jeux_video_final.csv')
-    df = pd.read_csv(df_path)
+_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
 
 
-    df = df.dropna(axis = 0)
-
-
+@st.cache_data
+def load_dataviz_data():
+    df = pd.read_csv(os.path.join(_BASE_DIR, 'data', 'Ventes_jeux_video_final.csv'))
+    df = df.dropna(axis=0)
     df['Year'] = df['Year'].astype(str)
     df['Year'] = df['Year'].str[:-2]
     df['Year'] = pd.to_datetime(df['Year'], format='%Y')
     df['Year'] = df['Year'].dt.year
+    return df
 
 
-    # Charger vos données (assurez-vous que df est défini dans votre environnement)
-    # df = pd.read_csv('your_dataset.csv')  # Remplacer par le chargement réel de vos données
-
+def dataviz():
+    df = load_dataviz_data()
 
     st.title("📊 Page de DataViz 🎮")
 

@@ -4,6 +4,14 @@ import streamlit as st
 from PIL import Image
 import pandas as pd
 
+_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+
+
+@st.cache_data
+def _load_presentation_data():
+    return pd.read_csv(os.path.join(_BASE_DIR, 'data', 'Ventes_jeux_video_final.csv'))
+
+
 def presentation_et_objectif():
     # Obtenir le chemin absolu du dossier contenant ce fichier
     base_path = os.path.dirname(__file__)
@@ -58,12 +66,7 @@ def presentation_et_objectif():
     """)
 
     # Charger les données
-    df_path = os.path.join(base_path, '..', 'data', 'Ventes_jeux_video_final.csv')
-
-    if os.path.exists(df_path):
-        df = pd.read_csv(df_path)
-        st.write('Dataset après scrapping')
-        st.write(df)
-    else:
-        st.write("Erreur : le fichier de données est introuvable.")
+    df = _load_presentation_data()
+    st.write('Dataset après scrapping')
+    st.write(df)
 

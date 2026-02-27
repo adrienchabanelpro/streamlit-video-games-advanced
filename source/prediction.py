@@ -5,36 +5,31 @@ import lightgbm as lgb
 import joblib
 import warnings
 
-# Charger le fichier CSV avec un chemin absolu
-df_top_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'df_topfeats.csv')
-df_top = pd.read_csv(df_top_path)
-df_features_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'df_features.csv')
-df_features = pd.read_csv(df_features_path)
-
-
-# Charger le modèle avec un chemin absolu
-model_path = os.path.join(os.path.dirname(__file__), '..', 'reports', 'model_final.txt')
-model = lgb.Booster(model_file=model_path)
-
-
-
-# Charger les données et le modèle
-df_top = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'df_topfeats.csv'))
-df_features = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'df_features.csv'))
-
-
-
-# Définir le chemin correct vers le modèle
-model_path = os.path.join(os.path.dirname(__file__), '..', 'reports', 'model_final.txt')
-
-# Charger le modèle avec le chemin absolu
-model = lgb.Booster(model_file=model_path)
-
 warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
 
+_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
 
 
-def get_input():
+@st.cache_data
+def load_data():
+    df_top = pd.read_csv(os.path.join(_BASE_DIR, 'data', 'df_topfeats.csv'))
+    df_features = pd.read_csv(os.path.join(_BASE_DIR, 'data', 'df_features.csv'))
+    return df_top, df_features
+
+
+@st.cache_resource
+def load_model():
+    model_path = os.path.join(_BASE_DIR, 'reports', 'model_final.txt')
+    return lgb.Booster(model_file=model_path)
+
+
+@st.cache_resource
+def load_numerical_transformer():
+    return joblib.load(os.path.join(_BASE_DIR, 'models', 'numerical_transformer.joblib'))
+
+
+
+def get_input(df_features):
     st.sidebar.header('Sélection des entrées')
 
     input_data = {}
@@ -89,7 +84,7 @@ def get_features(input_data, df_features, genre_input, platform_input):
 
     return df_input_data
 
-def standardization(df_input_data, publisher_input):
+def standardization(df_input_data, publisher_input, df_top):
     numerical_features = [
         'Year', 'meta_score', 'user_review',
         'Global_Sales_mean_genre', 'Global_Sales_mean_platform', 'Year_Global_Sales_mean_genre',
@@ -97,10 +92,7 @@ def standardization(df_input_data, publisher_input):
         'Cumulative_Sales_Genre', 'Cumulative_Sales_Platform'
     ]
 
-    numerical_transformer_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'numerical_transformer.joblib')
-    numerical_transformer = joblib.load(numerical_transformer_path)
-
-    
+    numerical_transformer = load_numerical_transformer()
     df_input_data[numerical_features] = numerical_transformer.transform(df_input_data[numerical_features])
 
     publisher_cols = ['Publisher_' + str(pub) for pub in df_top['Publisher'].unique()]
@@ -114,7 +106,10 @@ def standardization(df_input_data, publisher_input):
 
 def prediction_page():
     st.title("Prédiction des ventes de jeux vidéo")
-    
+
+    df_top, df_features = load_data()
+    model = load_model()
+
     # CSS pour positionner l'écran de la borne d'arcade
     st.markdown(
         """
@@ -161,14 +156,14 @@ def prediction_page():
         st.write(f"Erreur : l'image {os.path.basename(image_path)} est introuvable. Vérifiez le dossier images/.")
 
     # Obtenir les entrées utilisateur
-    publisher_input, genre_input, platform_input, input_data = get_input()
+    publisher_input, genre_input, platform_input, input_data = get_input(df_features)
 
     if st.sidebar.button('Prédire'):
         # Obtenir les caractéristiques
         df_input_data = get_features(input_data, df_features, genre_input, platform_input)
 
         # Standardiser les données
-        numerical_features, df_input_data_transformed = standardization(df_input_data, publisher_input)
+        numerical_features, df_input_data_transformed = standardization(df_input_data, publisher_input, df_top)
 
         # Prédire en fonction des entrées utilisateur
         user_pred = model.predict(df_input_data_transformed)
