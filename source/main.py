@@ -15,7 +15,7 @@ from prediction import prediction_page
 
 st.set_page_config(page_title="Prediction Jeux Video", page_icon="🎮", layout="wide")
 
-# Appliquer le style
+# Apply global style (persists across all pages)
 apply_style()
 st.markdown("""
     <style>
@@ -27,55 +27,45 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Chemin du GIF de navigation
-navigation_gif_path = os.path.join(os.path.dirname(__file__), '..', 'images', 'chun-li-walking-animation.gif')
-
-
-# Titre de la barre latérale
-st.sidebar.title("Navigation")
-
-# Vérifier si le GIF de navigation existe
+# Sidebar branding
+navigation_gif_path = os.path.join(
+    os.path.dirname(__file__), '..', 'images', 'chun-li-walking-animation.gif'
+)
 if os.path.exists(navigation_gif_path):
     st.sidebar.image(navigation_gif_path, width=200)
 else:
-    st.sidebar.write(f"Erreur : l'image {os.path.basename(navigation_gif_path)} est introuvable. Vérifiez le dossier images/.")
+    st.sidebar.write(
+        f"Erreur : l'image {os.path.basename(navigation_gif_path)} "
+        "est introuvable. Verifiez le dossier images/."
+    )
 
 
-# Configuration de la barre latérale pour la navigation
-page = st.sidebar.radio("Choisissez une page", 
-                        ["Présentation", "Méthodologie", "DataViz", 
-                         "Feature Engineering", "Modélisation", 
-                         "Prédiction", "Perception", 
-                         "Perspectives", "Jeu Surprise"])
-
-# Choisir la page à afficher
-if page == "Présentation":
-    presentation_et_objectif()
-elif page == "Méthodologie":
-    methodologie()
-elif page == "DataViz":
-    st.title("DataViz")
-    dataviz()
-    
-elif page == "Feature Engineering":
-    feature_engineering()
-elif page == "Modélisation":
-    st.title("Modélisation")
-    modelisation()
-elif page == "Prédiction":
-    prediction_page()
-elif page == "Perspectives":
-    perspectives()
-elif page == "Perception":
-    perception()
-        #else:
-          #  st.error("Le fichier CSV doit contenir une colonne 'user_review'.")
-elif page == "Jeu Surprise":
+def jeu_surprise():
+    """Jeu Surprise page — launches a random pygame game."""
     st.title("THE GAME!!")
-    st.write("Es-tu prêt à donner le meilleur de toi même?")
+    st.write("Es-tu pret a donner le meilleur de toi meme?")
     if st.button("Clique ICI"):
-    # Utiliser random.choices avec des poids égaux
-        game_choice = random.choices(['casse_brique.py', 'snake.py'], weights=[1, 1], k=1)[0]
+        game_choice = random.choices(
+            ['casse_brique.py', 'snake.py'], weights=[1, 1], k=1
+        )[0]
         game_path = os.path.join(os.path.dirname(__file__), game_choice)
         subprocess.Popen(['python', game_path])
-        st.write(f"Le jeu {game_choice.split('.')[0]} se lance dans une nouvelle fenêtre.")
+        st.write(
+            f"Le jeu {game_choice.split('.')[0]} se lance dans une nouvelle fenetre."
+        )
+
+
+# Native multi-page navigation (Streamlit 1.36+)
+pg = st.navigation([
+    st.Page(presentation_et_objectif, title="Presentation", icon="🎯"),
+    st.Page(methodologie, title="Methodologie", icon="📋"),
+    st.Page(dataviz, title="DataViz", icon="📊"),
+    st.Page(feature_engineering, title="Feature Engineering", icon="⚙️"),
+    st.Page(modelisation, title="Modelisation", icon="🧠"),
+    st.Page(prediction_page, title="Prediction", icon="🔮"),
+    st.Page(perception, title="Perception", icon="💬"),
+    st.Page(perspectives, title="Perspectives", icon="🔭"),
+    st.Page(jeu_surprise, title="Jeu Surprise", icon="🎮"),
+])
+
+pg.run()
