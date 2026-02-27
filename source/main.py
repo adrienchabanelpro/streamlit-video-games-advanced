@@ -17,16 +17,6 @@ st.set_page_config(page_title="Prediction Jeux Video", page_icon="🎮", layout=
 
 # Apply global style (persists across all pages)
 apply_style()
-st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-        .stRadio > label {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 14px;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
 # Sidebar branding
 navigation_gif_path = os.path.join(
     os.path.dirname(__file__), '..', 'images', 'chun-li-walking-animation.gif'
