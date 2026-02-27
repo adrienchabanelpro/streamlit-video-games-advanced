@@ -8,10 +8,10 @@ def perspectives():
     # Titre de la page
     st.title("Perspectives")
 
-    current_dir = os.getcwd() + '/images'
+    images_dir = os.path.join(os.path.dirname(__file__), '..', 'images')
 
     # Chemin du GIF local
-    gif_path = os.path.join(current_dir, "ryu-ken.gif")
+    gif_path = os.path.join(images_dir, "ryu-ken.gif")
     # Afficher le GIF sous le titre
     if os.path.exists(gif_path):
         st.image(gif_path, use_container_width=True)
@@ -90,11 +90,17 @@ def perspectives():
         if score == len(quiz_questions):
             st.balloons()
             st.write("Félicitations ! Vous avez tout juste.")
-            image = Image.open("images\youwin.png")
-            st.image(image, caption="You Win!")
+            try:
+                image = Image.open(os.path.join(images_dir, "youwin.png"))
+                st.image(image, caption="You Win!")
+            except FileNotFoundError:
+                st.warning("Image youwin.png introuvable.")
         else:
-            image = Image.open("images\game_over.png")
-            st.image(image, caption="Game Over")
+            try:
+                image = Image.open(os.path.join(images_dir, "game_over.png"))
+                st.image(image, caption="Game Over")
+            except FileNotFoundError:
+                st.warning("Image game_over.png introuvable.")
             st.write("Réessayez pour améliorer votre score.")
 
     # Fin de la page

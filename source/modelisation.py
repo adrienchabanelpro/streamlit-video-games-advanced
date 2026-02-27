@@ -77,13 +77,14 @@ def modelisation():
     # Division des données
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # Création et entraînement du modèle avec les paramètres ajustés
-    model = lgb.LGBMRegressor(max_depth=max_depth, learning_rate=learning_rate)
-    model.fit(X_train, y_train)
+    with st.spinner("Entrainement du modele..."):
+        # Création et entraînement du modèle avec les paramètres ajustés
+        model = lgb.LGBMRegressor(max_depth=max_depth, learning_rate=learning_rate)
+        model.fit(X_train, y_train)
 
-    # Prédiction et évaluation
-    y_pred = model.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
+        # Prédiction et évaluation
+        y_pred = model.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
 
     # Affichage des résultats
     st.write(f"Erreur Quadratique Moyenne (MSE) avec profondeur {max_depth} et taux d'apprentissage {learning_rate}: {mse:.2f}")

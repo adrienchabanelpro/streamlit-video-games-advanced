@@ -1,24 +1,10 @@
 import streamlit as st
-import os 
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.patches as patches
-import subprocess
-import random
-from style import apply_style
-from presentation import presentation_et_objectif
-from methodologie import methodologie
-from dataviz import dataviz
-from  feature_engineering import feature_engineering
-from modelisation import modelisation
-from perspectives import perspectives
-from prediction import prediction_page
-from analyse_avis_utilisateurs import predict_user_reviews
+import os
 import plotly.graph_objects as go
 import base64
 from io import BytesIO
 from PIL import Image
+from analyse_avis_utilisateurs import predict_user_reviews
 
 
 
@@ -31,8 +17,9 @@ def  perception():
     
     if uploaded_file is not None:
         if st.button("Lancer la prédiction"):
-            data, positive_percentage, negative_percentage = predict_user_reviews(uploaded_file)
-        
+            with st.spinner("Analyse des avis..."):
+                data, positive_percentage, negative_percentage = predict_user_reviews(uploaded_file)
+
             if data is not None and positive_percentage is not None:
                 st.write(f"Pourcentage de réponses positives (1) : {positive_percentage:.2f}%")
                 st.write(f"Pourcentage de réponses négatives (0) : {negative_percentage:.2f}%")
@@ -73,7 +60,7 @@ def  perception():
                 return f'rgba({red},{green},{blue},{alpha})'
 
                 # Chemin de votre image locale
-            image_path = "street_fighter2.png"  # Remplacez par le chemin de votre image
+            image_path = os.path.join(os.path.dirname(__file__), '..', 'images', 'street_fighter2.png')
             encoded_image = pil_to_base64(image_path)
 
             # Créer les étapes de dégradé
