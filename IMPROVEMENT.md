@@ -65,15 +65,15 @@ This document outlines an ambitious roadmap to take this video game sales predic
 
 ### Quick Wins
 - [x] **Export predictions as CSV/PDF** — Let users download prediction results with `st.download_button()`.
-- [ ] **Game comparison tool** — Side-by-side comparison of two games' predicted sales based on different parameters.
+- [x] **Game comparison tool** — Side-by-side comparison with predicted sales bar chart and radar chart. Uses ensemble prediction pipeline.
 - [x] **Search & filter on DataViz** — Multi-select filters (genre, platform, publisher) + year range slider at top of DataViz page. All charts respond to filters. Matplotlib replaced with Plotly + dark neon theme.
 
 ### Medium Effort
 - [x] **Recommendation engine** — "Games like this" feature: given a game's attributes, find similar games using cosine similarity or k-NN on feature vectors.
 - [x] **What-if analysis** — Interactive sliders to see how changing one variable (e.g., meta_score from 60 to 90) impacts predicted sales, with real-time chart updates.
 - [x] **Batch prediction** — Upload a CSV of multiple games and get predictions for all of them at once.
-- [ ] **Historical trend explorer** — Interactive timeline showing how genres, platforms, and publishers evolved over decades.
-- [ ] **Publisher analytics dashboard** — Deep-dive into any publisher's historical performance, genre distribution, and predicted future.
+- [x] **Historical trend explorer** — Interactive timeline with genre, platform, and publisher views. Includes releases, sales, market share, scores, lifecycle heatmap, and sunburst charts.
+- [x] **Publisher analytics dashboard** — Integrated into historical trend explorer (publisher view): sales timeline, genre sunburst, releases per year, average sales per title.
 
 ### Ambitious
 - [ ] **Real-time market tracker** — Live connection to gaming APIs to show current market trends alongside historical data.
