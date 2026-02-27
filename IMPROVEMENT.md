@@ -48,7 +48,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 - [ ] **Responsive charts** — Replace static Matplotlib plots with Plotly everywhere for consistency and interactivity.
 
 ### Medium Effort
-- [ ] **Multi-page app (native)** — Migrate from sidebar radio buttons to Streamlit's native `pages/` directory structure for proper URL routing.
+- [x] **Multi-page app (native)** — Migrated to `st.navigation()` API with proper URL routing, page icons, and global sidebar branding.
 - [ ] **Dark mode** — Implement a proper dark theme that matches the retro arcade aesthetic. Dark backgrounds with neon accents.
 - [ ] **Streamlit-extras components** — Use `streamlit-extras` for animated counters, card layouts, metric displays, and other modern UI components.
 - [ ] **Custom Streamlit theme** — Create a `.streamlit/config.toml` with custom primary colors, background, and font settings.
@@ -86,7 +86,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 
 ### Quick Wins
 - [ ] **Data validation** — Add schema validation (with `pandera` or `great_expectations`) to catch data quality issues early.
-- [ ] **Caching** — Use `@st.cache_data` and `@st.cache_resource` consistently for all data loading and model loading to speed up the app.
+- [x] **Caching** — `@st.cache_data` and `@st.cache_resource` added to all data/model loading functions.
 
 ### Medium Effort
 - [ ] **Steam API integration** — Pull real-time data from Steam's public API (player counts, reviews, pricing, tags).
@@ -206,10 +206,10 @@ This document outlines an ambitious roadmap to take this video game sales predic
 | ~~1~~ | ML | ~~Hyperparameter tuning (Optuna)~~ | High | Low | **DONE** |
 | ~~2~~ | ML | ~~Remove data leakage~~ | Critical | Low | **DONE** |
 | ~~3~~ | ML | ~~SHAP feature importance~~ | High | Low | **DONE** |
-| 4 | Code | Caching with @st.cache_data | High | Low |
-| 5 | UI | Streamlit native multi-page | Medium | Low |
+| ~~4~~ | Code | ~~Caching with @st.cache_data~~ | High | Low | **DONE** |
+| ~~5~~ | UI | ~~Streamlit native multi-page~~ | Medium | Low | **DONE** |
 | 6 | ML | Ensemble (LightGBM + XGBoost + CatBoost) | High | Medium |
-| 7 | ML | Target encoding (replace one-hot) | High | Medium |
+| ~~7~~ | ML | ~~Target encoding (replace one-hot)~~ | High | Medium | **DONE** |
 | 8 | NLP | Transformer-based sentiment | High | Medium |
 | 9 | UI | Dark mode + retro neon theme | Medium | Medium |
 | 10 | Data | Steam/IGDB API integration | High | Medium |
