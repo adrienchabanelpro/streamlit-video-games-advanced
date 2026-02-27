@@ -44,14 +44,14 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ### Quick Wins
 - [ ] **Streamlit page config** — Use `st.set_page_config()` with proper title, favicon, and wide layout mode.
 - [ ] **Loading states** — Add `st.spinner()` around model loading and predictions so users know something is happening.
-- [ ] **Better color palette** — Define a consistent color scheme (not just orange sidebar) using CSS variables. Consider a retro neon palette (dark background, neon green/pink/cyan accents).
+- [x] **Better color palette** — Define a consistent color scheme (not just orange sidebar) using CSS variables. Consider a retro neon palette (dark background, neon green/pink/cyan accents).
 - [ ] **Responsive charts** — Replace static Matplotlib plots with Plotly everywhere for consistency and interactivity.
 
 ### Medium Effort
 - [x] **Multi-page app (native)** — Migrated to `st.navigation()` API with proper URL routing, page icons, and global sidebar branding.
-- [ ] **Dark mode** — Implement a proper dark theme that matches the retro arcade aesthetic. Dark backgrounds with neon accents.
+- [x] **Dark mode** — Implement a proper dark theme that matches the retro arcade aesthetic. Dark backgrounds with neon accents.
 - [ ] **Streamlit-extras components** — Use `streamlit-extras` for animated counters, card layouts, metric displays, and other modern UI components.
-- [ ] **Custom Streamlit theme** — Create a `.streamlit/config.toml` with custom primary colors, background, and font settings.
+- [x] **Custom Streamlit theme** — Create a `.streamlit/config.toml` with custom primary colors, background, and font settings.
 - [ ] **Animated transitions** — Add Lottie animations (via `streamlit-lottie`) for page transitions and loading states.
 
 ### Ambitious
@@ -211,7 +211,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 | ~~6~~ | ML | ~~Ensemble (LightGBM + XGBoost + CatBoost)~~ | High | Medium | **DONE** |
 | ~~7~~ | ML | ~~Target encoding (replace one-hot)~~ | High | Medium | **DONE** |
 | ~~8~~ | NLP | ~~Transformer-based sentiment~~ | High | Medium | **DONE** |
-| 9 | UI | Dark mode + retro neon theme | Medium | Medium |
+| ~~9~~ | UI | ~~Dark mode + retro neon theme~~ | Medium | Medium | **DONE** |
 | 10 | Data | Steam/IGDB API integration | High | Medium |
 | 11 | Code | Unit tests (pytest) | Medium | Medium |
 | 12 | Deploy | Streamlit Cloud deployment | High | Low |

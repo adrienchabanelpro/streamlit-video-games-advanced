@@ -190,7 +190,8 @@ def prediction_page():
         }
         .arcade-screen {
             font-family: 'Press Start 2P', cursive;
-            color: #ec8853;
+            color: #00FFCC;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
             padding: 10px;
             border-radius: 5px;
             text-align: center;
@@ -267,7 +268,7 @@ def prediction_page():
 
     st.markdown("---")
     st.markdown(
-        "<p style='text-align: center; color: gray;'>"
+        "<p style='text-align: center; color: #666;'>"
         "Ce modele est en version beta et peut faire des erreurs. "
         "Envisagez de verifier les informations importantes.</p>",
         unsafe_allow_html=True,

@@ -53,7 +53,7 @@ def perception():
     # Disclaimer
     st.markdown("---")
     st.markdown(
-        "<p style='text-align: center; color: gray;'>"
+        "<p style='text-align: center; color: #666;'>"
         "Modele : DistilBERT (distilbert-base-uncased-finetuned-sst-2-english). "
         "Ce modele est en version beta et peut faire des erreurs. "
         "Envisagez de verifier les informations importantes.</p>",
@@ -112,7 +112,7 @@ def _display_gauge(positive_percentage: float) -> None:
                 "bar": {"color": "rgba(0,0,0,0)"},
                 "steps": steps,
                 "threshold": {
-                    "line": {"color": "black", "width": 5},
+                    "line": {"color": "#00FFCC", "width": 5},
                     "thickness": 0.75,
                     "value": positive_percentage,
                 },
@@ -127,10 +127,10 @@ def _display_gauge(positive_percentage: float) -> None:
             "x": 0.5,
             "xanchor": "center",
             "yanchor": "top",
-            "font": {"color": "black"},
+            "font": {"color": "#00FFCC"},
         },
-        paper_bgcolor="white",
-        font=dict(family="Arial", size=18, color="white"),
+        paper_bgcolor="#0D0D0D",
+        font=dict(family="Arial", size=18, color="#E0E0E0"),
         margin=dict(t=50, b=0, l=0, r=0),
         images=[
             dict(
