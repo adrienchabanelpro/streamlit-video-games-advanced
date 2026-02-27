@@ -69,7 +69,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 - [ ] **Search & filter on DataViz** — Add search bars and multi-select filters for publishers, genres, and platforms on visualization pages.
 
 ### Medium Effort
-- [ ] **Recommendation engine** — "Games like this" feature: given a game's attributes, find similar games using cosine similarity or k-NN on feature vectors.
+- [x] **Recommendation engine** — "Games like this" feature: given a game's attributes, find similar games using cosine similarity or k-NN on feature vectors.
 - [x] **What-if analysis** — Interactive sliders to see how changing one variable (e.g., meta_score from 60 to 90) impacts predicted sales, with real-time chart updates.
 - [ ] **Batch prediction** — Upload a CSV of multiple games and get predictions for all of them at once.
 - [ ] **Historical trend explorer** — Interactive timeline showing how genres, platforms, and publishers evolved over decades.
@@ -216,7 +216,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 | ~~11~~ | Code | ~~Unit tests (pytest)~~ | Medium | Medium | **DONE** |
 | ~~12~~ | Deploy | ~~Streamlit Cloud deployment~~ | High | Low | **DONE** |
 | ~~13~~ | Feature | ~~What-if analysis tool~~ | Medium | Medium | **DONE** |
-| 14 | Feature | Recommendation engine | High | Medium |
+| ~~14~~ | Feature | ~~Recommendation engine~~ | High | Medium | **DONE** |
 | 15 | ML | Deep learning (TabNet/neural net) | Medium | High |
 | 16 | Code | Full modular refactor | Medium | High |
 | 17 | NLP | LLM-powered analysis | High | High |
