@@ -13,6 +13,7 @@ from perspectives import perspectives
 from perception import perception
 from prediction import prediction_page
 from what_if import what_if_page
+from recommendation import recommendation_page
 
 st.set_page_config(page_title="Prediction Jeux Video", page_icon="🎮", layout="wide")
 
@@ -71,6 +72,7 @@ pg = st.navigation([
     st.Page(modelisation, title="Modelisation", icon="🧠"),
     st.Page(prediction_page, title="Prediction", icon="🔮"),
     st.Page(what_if_page, title="What-If", icon="🔬"),
+    st.Page(recommendation_page, title="Recommandations", icon="💡"),
     st.Page(perception, title="Perception", icon="💬"),
     st.Page(perspectives, title="Perspectives", icon="🔭"),
     st.Page(jeu_surprise, title="Jeu Surprise", icon="🎮"),
