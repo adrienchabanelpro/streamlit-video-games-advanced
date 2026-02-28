@@ -1,14 +1,17 @@
+"""User perception analysis page with DistilBERT sentiment gauge."""
+
 import base64
-import os
 from io import BytesIO
 
 import plotly.graph_objects as go
 import streamlit as st
 from analyse_avis_utilisateurs import predict_user_reviews
+from config import BG, CYAN, IMAGES_DIR, TEXT_COLOR
 from PIL import Image
 
 
-def perception():
+def perception_page() -> None:
+    """Render the user perception / sentiment analysis page."""
     st.title("Perception")
     st.write(
         "Decouvrez ce que vos utilisateurs pensent de votre produit en "
@@ -61,6 +64,7 @@ def _display_gauge(positive_percentage: float) -> None:
     """Render the Plotly gauge with Street Fighter background."""
 
     def _pil_to_base64(img_path: str) -> str:
+        """Convert an image file to a base64-encoded data URI."""
         img = Image.open(img_path)
         buffer = BytesIO()
         img.save(buffer, format="PNG")
@@ -68,6 +72,7 @@ def _display_gauge(positive_percentage: float) -> None:
         return f"data:image/png;base64,{img_str}"
 
     def _get_color(value: float, alpha: float = 0.5) -> str:
+        """Return an RGBA color string for the given gauge *value*."""
         if value <= 25:
             red, green, blue = 255, int((value / 25) * 165), 0
         elif value <= 50:
@@ -83,12 +88,12 @@ def _display_gauge(positive_percentage: float) -> None:
             blue = 0
         return f"rgba({red},{green},{blue},{alpha})"
 
-    image_path = os.path.join(os.path.dirname(__file__), "..", "images", "street_fighter2.png")
-    if not os.path.exists(image_path):
+    image_path = IMAGES_DIR / "street_fighter2.png"
+    if not image_path.exists():
         st.warning("Image street_fighter2.png introuvable.")
         return
 
-    encoded_image = _pil_to_base64(image_path)
+    encoded_image = _pil_to_base64(str(image_path))
 
     steps = [{"range": [i, i + 1], "color": _get_color(i, alpha=0.7)} for i in range(101)]
 
@@ -103,7 +108,7 @@ def _display_gauge(positive_percentage: float) -> None:
                 "bar": {"color": "rgba(0,0,0,0)"},
                 "steps": steps,
                 "threshold": {
-                    "line": {"color": "#00FFCC", "width": 5},
+                    "line": {"color": CYAN, "width": 5},
                     "thickness": 0.75,
                     "value": positive_percentage,
                 },
@@ -118,10 +123,10 @@ def _display_gauge(positive_percentage: float) -> None:
             "x": 0.5,
             "xanchor": "center",
             "yanchor": "top",
-            "font": {"color": "#00FFCC"},
+            "font": {"color": CYAN},
         },
-        paper_bgcolor="#0D0D0D",
-        font=dict(family="Arial", size=18, color="#E0E0E0"),
+        paper_bgcolor=BG,
+        font=dict(family="Arial", size=18, color=TEXT_COLOR),
         margin=dict(t=50, b=0, l=0, r=0),
         images=[
             dict(

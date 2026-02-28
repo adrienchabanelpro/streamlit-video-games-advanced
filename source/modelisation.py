@@ -1,17 +1,18 @@
 import json
-import os
 
 import lightgbm as lgb
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
+from config import IMAGES_DIR, PLOTLY_LAYOUT, REPORTS_DIR
 from sklearn.datasets import fetch_california_housing
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 
-_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 
-
-def modelisation():
+def modelisation_page() -> None:
+    """Render the LightGBM model presentation and interactive demo page."""
 
     # Titre de la présentation
     st.title("🚀 Présentation du Modèle LightGBM")
@@ -19,7 +20,7 @@ def modelisation():
     # Introduction
     st.header("Introduction 🌟")
     st.write("""
-    Avant de sélectionner le modèle ci-dessous, nous avons utilisé un LazyRegressor qui a généré 29 modèles et leurs scores respectifs. Le LightGBM ayant obtenu les meilleurs résultats, c'est celui que nous avons choisi pour ce projet.                   
+    Avant de sélectionner le modèle ci-dessous, nous avons utilisé un LazyRegressor qui a généré 29 modèles et leurs scores respectifs. Le LightGBM ayant obtenu les meilleurs résultats, c'est celui que nous avons choisi pour ce projet.
     LightGBM est un framework de boosting de gradient développé par Microsoft. Il est conçu pour être extrêmement efficace, rapide et performant.
     """)
 
@@ -29,29 +30,26 @@ def modelisation():
     st.write("""
     Le LightGBM Regressor fonctionne en combinant plusieurs techniques avancées pour optimiser l'entraînement et la précision des modèles de régression :
     Gradient Boosting : Combine plusieurs modèles faibles séquentiellement pour créer un modèle puissant.
-             
+
     Exclusive Feature Bundling (EFB) : Réduit la dimensionnalité en combinant des variables non chevauchantes.
-             
+
     Gradient-based One-Side Sampling (GOSS) : Améliore l'efficacité de l'entraînement en sélectionnant intelligemment les échantillons de données.
     Croissance verticale des arbres : Ajoute des niveaux de profondeur aux arbres de décision pour améliorer les prédictions.
     """)
 
     # Schéma de fonctionnement de LightGBM
-    chemin_image = os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "images",
-        "A_stylized_diagram_illustrating_the_workflow_of_Li.jpg",
-    )
+    chemin_image = IMAGES_DIR / "A_stylized_diagram_illustrating_the_workflow_of_Li.jpg"
 
     st.subheader("Schéma de Fonctionnement 🔍")
-    if os.path.exists(chemin_image):
+    if chemin_image.exists():
         st.image(
-            chemin_image, caption="Schéma de Fonctionnement de LightGBM", use_container_width=True
+            str(chemin_image),
+            caption="Schéma de Fonctionnement de LightGBM",
+            use_container_width=True,
         )
     else:
         st.write(
-            f"Erreur : l'image {os.path.basename(chemin_image)} est introuvable. Vérifiez le dossier images/."
+            f"Erreur : l'image {chemin_image.name} est introuvable. Vérifiez le dossier images/."
         )
 
     # Avantages de LightGBM
@@ -66,7 +64,6 @@ def modelisation():
 
     # Schéma des avantages
     st.subheader("Avantages en un coup d'œil 📊")
-    import plotly.express as px
 
     adv_df = pd.DataFrame(
         {
@@ -84,10 +81,7 @@ def modelisation():
         title="Avantages de LightGBM",
     )
     fig_adv.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="#0D0D0D",
-        plot_bgcolor="#1A1A2E",
-        font=dict(color="#E0E0E0"),
+        **PLOTLY_LAYOUT,
         showlegend=False,
     )
     st.plotly_chart(fig_adv, use_container_width=True)
@@ -122,8 +116,6 @@ def modelisation():
     )
 
     # Comparaison des valeurs prédites et réelles
-    import plotly.graph_objects as go
-
     fig_scatter = go.Figure()
     fig_scatter.add_trace(
         go.Scatter(
@@ -147,10 +139,7 @@ def modelisation():
         title="Comparaison des valeurs reelles et predites",
         xaxis_title="Valeurs reelles",
         yaxis_title="Valeurs predites",
-        template="plotly_dark",
-        paper_bgcolor="#0D0D0D",
-        plot_bgcolor="#1A1A2E",
-        font=dict(color="#E0E0E0"),
+        **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
 
@@ -164,7 +153,7 @@ def modelisation():
             LGBMRegressor R² : Moyenne = 0.3107, Écart-type = 0.0151
             LGBMRegressor MSE : Moyenne = 0.0400, Écart-type = 0.0027
             LGBMRegressor MAE : Moyenne = 0.1432, Écart-type = 0.0043
-            
+
             Score du modèle après feature engineering :
 
             LGBMRegressor R² : Moyenne = 0.9880, Écart-type = 0.0035
@@ -178,11 +167,11 @@ def modelisation():
     st.markdown("---")
     st.header("Modele v2 : Optimisation Optuna + SHAP")
 
-    training_log_path = os.path.join(_BASE_DIR, "reports", "training_log.json")
-    shap_summary_path = os.path.join(_BASE_DIR, "reports", "shap_summary.png")
-    shap_bar_path = os.path.join(_BASE_DIR, "reports", "shap_bar.png")
+    training_log_path = REPORTS_DIR / "training_log.json"
+    shap_summary_path = REPORTS_DIR / "shap_summary.png"
+    shap_bar_path = REPORTS_DIR / "shap_bar.png"
 
-    if os.path.exists(training_log_path):
+    if training_log_path.exists():
         with open(training_log_path) as f:
             training_log = json.load(f)
 
@@ -291,18 +280,18 @@ def modelisation():
         interpretable pour chaque prediction.
         """)
 
-        if os.path.exists(shap_bar_path):
+        if shap_bar_path.exists():
             st.image(
-                shap_bar_path,
+                str(shap_bar_path),
                 caption="Importance moyenne des features (|SHAP|)",
                 use_container_width=True,
             )
         else:
             st.warning("Le graphique SHAP (bar) est introuvable.")
 
-        if os.path.exists(shap_summary_path):
+        if shap_summary_path.exists():
             st.image(
-                shap_summary_path,
+                str(shap_summary_path),
                 caption="Distribution SHAP par feature (beeswarm)",
                 use_container_width=True,
             )

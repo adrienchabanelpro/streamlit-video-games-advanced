@@ -84,5 +84,6 @@
     "Publisher_encoded"
   ],
   "target": "Global_Sales",
+  "log_transform": true,
   "random_state": 42
 }

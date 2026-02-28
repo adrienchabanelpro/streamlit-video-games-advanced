@@ -1,24 +1,15 @@
 """Historical trend explorer: interactive timeline of genres, platforms, and publishers."""
 
-import os
-
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-
-_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
-
-_PLOTLY_LAYOUT = dict(
-    template="plotly_dark",
-    paper_bgcolor="#0D0D0D",
-    plot_bgcolor="#1A1A2E",
-    font=dict(color="#E0E0E0"),
-)
+from config import DATA_DIR, PLOTLY_LAYOUT
 
 
 @st.cache_data
 def _load_data() -> pd.DataFrame:
-    df = pd.read_csv(os.path.join(_BASE_DIR, "data", "Ventes_jeux_video_final.csv"))
+    """Load and prepare the main dataset for trend analysis."""
+    df = pd.read_csv(DATA_DIR / "Ventes_jeux_video_final.csv")
     df = df.dropna(subset=["Year", "Publisher", "Genre", "Platform"])
     df["Year"] = df["Year"].astype(str).str[:-2].astype(int)
     return df
@@ -87,7 +78,7 @@ def _genre_trends(df: pd.DataFrame) -> None:
         labels={"Nb_jeux": "Nombre de jeux", "Year": "Annee"},
         markers=True,
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     # Sales per year
@@ -100,7 +91,7 @@ def _genre_trends(df: pd.DataFrame) -> None:
         title="Ventes globales par genre et par annee",
         labels={"Global_Sales": "Ventes (millions)", "Year": "Annee"},
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     # Market share over time
@@ -117,7 +108,7 @@ def _genre_trends(df: pd.DataFrame) -> None:
         title="Part de marche par genre (%)",
         labels={"Part_marche": "Part de marche (%)", "Year": "Annee"},
     )
-    fig.update_layout(barmode="stack", **_PLOTLY_LAYOUT)
+    fig.update_layout(barmode="stack", **PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     # Average scores over time
@@ -141,7 +132,7 @@ def _genre_trends(df: pd.DataFrame) -> None:
             labels={"meta_score": "Metacritic", "Year": "Annee"},
             markers=True,
         )
-        fig.update_layout(**_PLOTLY_LAYOUT)
+        fig.update_layout(**PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
@@ -154,7 +145,7 @@ def _genre_trends(df: pd.DataFrame) -> None:
             labels={"user_review": "Score utilisateur", "Year": "Annee"},
             markers=True,
         )
-        fig.update_layout(**_PLOTLY_LAYOUT)
+        fig.update_layout(**PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
 
 
@@ -192,7 +183,7 @@ def _platform_trends(df: pd.DataFrame) -> None:
         labels={"Nb_jeux": "Nombre de jeux", "Year": "Annee"},
         markers=True,
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     # Sales timeline
@@ -205,7 +196,7 @@ def _platform_trends(df: pd.DataFrame) -> None:
         title="Ventes globales par plateforme et par annee",
         labels={"Global_Sales": "Ventes (millions)", "Year": "Annee"},
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     # Platform lifecycle — active years heatmap
@@ -227,7 +218,7 @@ def _platform_trends(df: pd.DataFrame) -> None:
         labels={"Ventes": "Ventes (M)", "Year": "Annee"},
         color_continuous_scale="Viridis",
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -265,7 +256,7 @@ def _publisher_trends(df: pd.DataFrame) -> None:
         labels={"Global_Sales": "Ventes (millions)", "Year": "Annee"},
         markers=True,
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     # Genre distribution per publisher (sunburst)
@@ -295,7 +286,7 @@ def _publisher_trends(df: pd.DataFrame) -> None:
         labels={"Nb_jeux": "Nombre de jeux", "Year": "Annee"},
         barmode="group",
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     # Average Global Sales per title over time
@@ -309,5 +300,5 @@ def _publisher_trends(df: pd.DataFrame) -> None:
         labels={"Global_Sales": "Ventes moyennes (millions)", "Year": "Annee"},
         markers=True,
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)

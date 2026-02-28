@@ -2,17 +2,19 @@
 import os
 import random
 import subprocess
+from pathlib import Path
 
 import streamlit as st
 from comparison import comparison_page
-from dataviz import dataviz
-from feature_engineering import feature_engineering
-from methodologie import methodologie
-from modelisation import modelisation
-from perception import perception
-from perspectives import perspectives
+from config import IMAGES_DIR
+from dataviz import dataviz_page
+from feature_engineering import feature_engineering_page
+from methodologie import methodologie_page
+from modelisation import modelisation_page
+from perception import perception_page
+from perspectives import perspectives_page
 from prediction import prediction_page
-from presentation import presentation_et_objectif
+from presentation import presentation_page
 from recommendation import recommendation_page
 from style import apply_style
 from trends import trends_page
@@ -23,15 +25,12 @@ st.set_page_config(page_title="Prediction Jeux Video", page_icon="🎮", layout=
 # Apply global style (persists across all pages)
 apply_style()
 # Sidebar branding
-navigation_gif_path = os.path.join(
-    os.path.dirname(__file__), "..", "images", "chun-li-walking-animation.gif"
-)
-if os.path.exists(navigation_gif_path):
-    st.sidebar.image(navigation_gif_path, width=200)
+navigation_gif_path = IMAGES_DIR / "chun-li-walking-animation.gif"
+if navigation_gif_path.exists():
+    st.sidebar.image(str(navigation_gif_path), width=200)
 else:
     st.sidebar.write(
-        f"Erreur : l'image {os.path.basename(navigation_gif_path)} "
-        "est introuvable. Verifiez le dossier images/."
+        f"Erreur : l'image {navigation_gif_path.name} est introuvable. Verifiez le dossier images/."
     )
 
 
@@ -45,8 +44,8 @@ def _has_display() -> bool:
     )  # macOS
 
 
-def jeu_surprise():
-    """Jeu Surprise page — launches a random pygame game."""
+def jeu_surprise_page() -> None:
+    """Jeu Surprise page -- launches a random pygame game."""
     st.title("THE GAME!!")
     st.write("Es-tu pret a donner le meilleur de toi meme?")
 
@@ -60,7 +59,7 @@ def jeu_surprise():
 
     if st.button("Clique ICI"):
         game_choice = random.choices(["casse_brique.py", "snake.py"], weights=[1, 1], k=1)[0]
-        game_path = os.path.join(os.path.dirname(__file__), game_choice)
+        game_path = str(Path(__file__).parent / game_choice)
         subprocess.Popen(["python", game_path])
         st.write(f"Le jeu {game_choice.split('.')[0]} se lance dans une nouvelle fenetre.")
 
@@ -68,19 +67,19 @@ def jeu_surprise():
 # Native multi-page navigation (Streamlit 1.36+)
 pg = st.navigation(
     [
-        st.Page(presentation_et_objectif, title="Presentation", icon="🎯"),
-        st.Page(methodologie, title="Methodologie", icon="📋"),
-        st.Page(dataviz, title="DataViz", icon="📊"),
-        st.Page(feature_engineering, title="Feature Engineering", icon="⚙️"),
-        st.Page(modelisation, title="Modelisation", icon="🧠"),
+        st.Page(presentation_page, title="Presentation", icon="🎯"),
+        st.Page(methodologie_page, title="Methodologie", icon="📋"),
+        st.Page(dataviz_page, title="DataViz", icon="📊"),
+        st.Page(feature_engineering_page, title="Feature Engineering", icon="⚙️"),
+        st.Page(modelisation_page, title="Modelisation", icon="🧠"),
         st.Page(prediction_page, title="Prediction", icon="🔮"),
         st.Page(what_if_page, title="What-If", icon="🔬"),
         st.Page(recommendation_page, title="Recommandations", icon="💡"),
         st.Page(comparison_page, title="Comparaison", icon="⚖️"),
         st.Page(trends_page, title="Tendances", icon="📈"),
-        st.Page(perception, title="Perception", icon="💬"),
-        st.Page(perspectives, title="Perspectives", icon="🔭"),
-        st.Page(jeu_surprise, title="Jeu Surprise", icon="🎮"),
+        st.Page(perception_page, title="Perception", icon="💬"),
+        st.Page(perspectives_page, title="Perspectives", icon="🔭"),
+        st.Page(jeu_surprise_page, title="Jeu Surprise", icon="🎮"),
     ]
 )
 
