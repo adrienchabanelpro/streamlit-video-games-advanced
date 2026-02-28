@@ -1,15 +1,14 @@
-import os
+"""NLP sentiment analysis using DistilBERT transformer model."""
 
 import pandas as pd
 import streamlit as st
 from transformers import pipeline
 
-_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 _MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 
 
 @st.cache_resource
-def _load_sentiment_pipeline():
+def _load_sentiment_pipeline() -> object:
     """Load the DistilBERT sentiment analysis pipeline (cached)."""
     return pipeline(
         "sentiment-analysis",
@@ -20,11 +19,16 @@ def _load_sentiment_pipeline():
 
 
 def predict_user_reviews(
-    uploaded_file,
+    uploaded_file: object,
 ) -> tuple[pd.DataFrame | None, float | None, float | None]:
     """Predict sentiment for each review in uploaded CSV.
 
-    Returns (dataframe_with_predictions, positive_pct, negative_pct).
+    Args:
+        uploaded_file: A Streamlit ``UploadedFile`` (CSV) containing a
+            ``user_review`` column.
+
+    Returns:
+        Tuple of (dataframe_with_predictions, positive_pct, negative_pct).
     """
     classifier = _load_sentiment_pipeline()
 

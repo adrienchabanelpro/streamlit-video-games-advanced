@@ -1,20 +1,17 @@
 """Recommendation engine: find similar games using cosine similarity."""
 
-import os
-
 import numpy as np
 import pandas as pd
 import streamlit as st
+from config import DATA_DIR
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
-
-_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 
 
 @st.cache_data
 def _load_games_data() -> pd.DataFrame:
     """Load and prepare games dataset for similarity computation."""
-    df = pd.read_csv(os.path.join(_BASE_DIR, "data", "Ventes_jeux_video_final.csv"))
+    df = pd.read_csv(DATA_DIR / "Ventes_jeux_video_final.csv")
     df = df.dropna(subset=["Name", "Genre", "Platform", "Publisher", "Year"])
     df["Year"] = df["Year"].astype(int)
     df["meta_score"] = df["meta_score"].fillna(df["meta_score"].median())

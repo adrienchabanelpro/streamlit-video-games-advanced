@@ -1,95 +1,16 @@
 """Game comparison tool: side-by-side prediction of two game configurations."""
 
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from config import BG, BG_SECONDARY, CYAN, PINK, TEXT_COLOR, YELLOW
 from prediction import (
-    _NUMERICAL_FEATURES,
-    _is_log_transformed,
-    _lookup_cumulative,
     load_feature_means,
     load_models,
     load_numerical_transformer,
     load_target_encoder,
+    predict_single,
 )
-
-# ---------------------------------------------------------------------------
-# Theme constants
-# ---------------------------------------------------------------------------
-_BG = "#0D0D0D"
-_BG_SECONDARY = "#1A1A2E"
-_CYAN = "#00FFCC"
-_PINK = "#FF6EC7"
-_YELLOW = "#FFFF00"
-_TEXT = "#E0E0E0"
-
-
-# ---------------------------------------------------------------------------
-# Prediction helper (same pattern as what_if._predict_single)
-# ---------------------------------------------------------------------------
-
-
-def _predict_single(
-    lgb_model,
-    xgb_model,
-    cb_model,
-    scaler,
-    encoder,
-    train_stats: dict,
-    genre: str,
-    platform: str,
-    publisher: str,
-    year: int,
-    meta_score: float,
-    user_review: float,
-) -> float:
-    """Build features and run ensemble prediction for a single game configuration."""
-    input_data: dict[str, float] = {
-        "Year": year,
-        "meta_score": meta_score,
-        "user_review": user_review,
-    }
-
-    # Feature engineering from training statistics
-    input_data["Global_Sales_mean_genre"] = train_stats["genre_means"].get(
-        genre, train_stats["global_sales_mean"]
-    )
-    input_data["Global_Sales_mean_platform"] = train_stats["platform_means"].get(
-        platform, train_stats["global_sales_mean"]
-    )
-    input_data["Year_Global_Sales_mean_genre"] = (
-        input_data["Year"] * input_data["Global_Sales_mean_genre"]
-    )
-    input_data["Year_Global_Sales_mean_platform"] = (
-        input_data["Year"] * input_data["Global_Sales_mean_platform"]
-    )
-    input_data["Cumulative_Sales_Genre"] = _lookup_cumulative(
-        train_stats["cumsum_genre"], genre, year
-    )
-    input_data["Cumulative_Sales_Platform"] = _lookup_cumulative(
-        train_stats["cumsum_platform"], platform, year
-    )
-
-    # Target encode publisher
-    pub_df = pd.DataFrame({"Publisher": [publisher]})
-    input_data["Publisher_encoded"] = encoder.transform(pub_df)["Publisher"].values[0]
-
-    # Build DataFrame and scale
-    df = pd.DataFrame(input_data, index=[0])
-    df[_NUMERICAL_FEATURES] = scaler.transform(df[_NUMERICAL_FEATURES])
-
-    # Ensemble prediction (average of 3 models)
-    X = df[_NUMERICAL_FEATURES]
-    pred_lgb = lgb_model.predict(X)
-    pred_xgb = xgb_model.predict(X.values)
-    pred_cb = cb_model.predict(X.values)
-    result = float((pred_lgb + pred_xgb + pred_cb) / 3)
-
-    if _is_log_transformed():
-        result = float(np.expm1(result))
-    return result
-
 
 # ---------------------------------------------------------------------------
 # Input widget helpers
@@ -112,7 +33,7 @@ def _game_inputs(
         Dictionary with keys: genre, platform, publisher, year, meta_score, user_review.
     """
     st.markdown(
-        f"<h3 style='text-align:center; color:{_CYAN};'>{label}</h3>",
+        f"<h3 style='text-align:center; color:{CYAN};'>{label}</h3>",
         unsafe_allow_html=True,
     )
 
@@ -185,10 +106,10 @@ def _build_bar_chart(
             x=[pred_a],
             orientation="h",
             name=label_a,
-            marker_color=_CYAN,
+            marker_color=CYAN,
             text=[f"{pred_a:.4f} M"],
             textposition="auto",
-            textfont=dict(color=_BG, size=13),
+            textfont=dict(color=BG, size=13),
         )
     )
     fig.add_trace(
@@ -197,10 +118,10 @@ def _build_bar_chart(
             x=[pred_b],
             orientation="h",
             name=label_b,
-            marker_color=_PINK,
+            marker_color=PINK,
             text=[f"{pred_b:.4f} M"],
             textposition="auto",
-            textfont=dict(color=_BG, size=13),
+            textfont=dict(color=BG, size=13),
         )
     )
 
@@ -209,9 +130,9 @@ def _build_bar_chart(
         xaxis_title="Ventes (M)",
         yaxis_title="",
         template="plotly_dark",
-        paper_bgcolor=_BG,
-        plot_bgcolor=_BG_SECONDARY,
-        font=dict(color=_TEXT),
+        paper_bgcolor=BG,
+        plot_bgcolor=BG_SECONDARY,
+        font=dict(color=TEXT_COLOR),
         barmode="group",
         showlegend=False,
         height=280,
@@ -267,7 +188,7 @@ def _build_radar_chart(
             theta=categories_closed,
             fill="toself",
             name=label_a,
-            line_color=_CYAN,
+            line_color=CYAN,
             fillcolor="rgba(0, 255, 204, 0.15)",
         )
     )
@@ -277,7 +198,7 @@ def _build_radar_chart(
             theta=categories_closed,
             fill="toself",
             name=label_b,
-            line_color=_PINK,
+            line_color=PINK,
             fillcolor="rgba(255, 110, 199, 0.15)",
         )
     )
@@ -285,10 +206,10 @@ def _build_radar_chart(
     fig.update_layout(
         title="Comparaison des profils",
         template="plotly_dark",
-        paper_bgcolor=_BG,
-        font=dict(color=_TEXT),
+        paper_bgcolor=BG,
+        font=dict(color=TEXT_COLOR),
         polar=dict(
-            bgcolor=_BG_SECONDARY,
+            bgcolor=BG_SECONDARY,
             radialaxis=dict(
                 visible=True,
                 range=[0, 105],
@@ -300,7 +221,7 @@ def _build_radar_chart(
         ),
         showlegend=True,
         legend=dict(
-            font=dict(color=_TEXT),
+            font=dict(color=TEXT_COLOR),
         ),
         height=450,
         margin=dict(l=40, r=40, t=60, b=40),
@@ -324,7 +245,7 @@ def _render_summary_card(
     st.markdown(
         f"""
         <div style="
-            background-color: {_BG_SECONDARY};
+            background-color: {BG_SECONDARY};
             border: 1px solid {accent_color};
             border-radius: 10px;
             padding: 18px;
@@ -333,12 +254,12 @@ def _render_summary_card(
             <h4 style="color: {accent_color}; text-align: center; margin-bottom: 12px;">
                 {label}
             </h4>
-            <p style="color: {_TEXT}; margin: 4px 0;"><b>Genre :</b> {cfg["genre"]}</p>
-            <p style="color: {_TEXT}; margin: 4px 0;"><b>Plateforme :</b> {cfg["platform"]}</p>
-            <p style="color: {_TEXT}; margin: 4px 0;"><b>Editeur :</b> {cfg["publisher"]}</p>
-            <p style="color: {_TEXT}; margin: 4px 0;"><b>Annee :</b> {cfg["year"]}</p>
-            <p style="color: {_TEXT}; margin: 4px 0;"><b>Metacritic :</b> {cfg["meta_score"]:.0f}</p>
-            <p style="color: {_TEXT}; margin: 4px 0;"><b>Score utilisateur :</b> {cfg["user_review"]:.1f}</p>
+            <p style="color: {TEXT_COLOR}; margin: 4px 0;"><b>Genre :</b> {cfg["genre"]}</p>
+            <p style="color: {TEXT_COLOR}; margin: 4px 0;"><b>Plateforme :</b> {cfg["platform"]}</p>
+            <p style="color: {TEXT_COLOR}; margin: 4px 0;"><b>Editeur :</b> {cfg["publisher"]}</p>
+            <p style="color: {TEXT_COLOR}; margin: 4px 0;"><b>Annee :</b> {cfg["year"]}</p>
+            <p style="color: {TEXT_COLOR}; margin: 4px 0;"><b>Metacritic :</b> {cfg["meta_score"]:.0f}</p>
+            <p style="color: {TEXT_COLOR}; margin: 4px 0;"><b>Score utilisateur :</b> {cfg["user_review"]:.1f}</p>
             <hr style="border-color: {accent_color}40;">
             <p style="
                 text-align: center;
@@ -403,7 +324,7 @@ def comparison_page() -> None:
                 <div style="
                     width: 2px;
                     height: 380px;
-                    background: linear-gradient({_CYAN}, {_PINK});
+                    background: linear-gradient({CYAN}, {PINK});
                     border-radius: 2px;
                 "></div>
             </div>
@@ -423,7 +344,7 @@ def comparison_page() -> None:
 
     if compare_clicked:
         with st.spinner("Calcul des predictions..."):
-            pred_a = _predict_single(
+            pred_a = predict_single(
                 lgb_model,
                 xgb_model,
                 cb_model,
@@ -437,7 +358,7 @@ def comparison_page() -> None:
                 cfg_a["meta_score"],
                 cfg_a["user_review"],
             )
-            pred_b = _predict_single(
+            pred_b = predict_single(
                 lgb_model,
                 xgb_model,
                 cb_model,
@@ -458,9 +379,9 @@ def comparison_page() -> None:
         st.subheader("Resultats")
         res_a, res_b = st.columns(2)
         with res_a:
-            _render_summary_card("Jeu A", cfg_a, pred_a, _CYAN)
+            _render_summary_card("Jeu A", cfg_a, pred_a, CYAN)
         with res_b:
-            _render_summary_card("Jeu B", cfg_b, pred_b, _PINK)
+            _render_summary_card("Jeu B", cfg_b, pred_b, PINK)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -469,20 +390,20 @@ def comparison_page() -> None:
         diff_pct = (diff / max(abs(pred_b), 0.0001)) * 100
         if diff > 0:
             winner_text = "Jeu A vend plus"
-            diff_color = _CYAN
+            diff_color = CYAN
         elif diff < 0:
             winner_text = "Jeu B vend plus"
-            diff_color = _PINK
+            diff_color = PINK
         else:
             winner_text = "Egalite"
-            diff_color = _YELLOW
+            diff_color = YELLOW
 
         st.markdown(
             f"""
             <div style="
                 text-align: center;
                 padding: 14px;
-                background-color: {_BG_SECONDARY};
+                background-color: {BG_SECONDARY};
                 border: 1px solid {diff_color};
                 border-radius: 10px;
                 box-shadow: 0 0 10px {diff_color}30;
@@ -492,7 +413,7 @@ def comparison_page() -> None:
                 <p style="color: {diff_color}; font-size: 1.1em; font-weight: bold; margin: 0;">
                     {winner_text}
                 </p>
-                <p style="color: {_TEXT}; margin: 4px 0 0 0;">
+                <p style="color: {TEXT_COLOR}; margin: 4px 0 0 0;">
                     Ecart : {abs(diff):.4f} M ({abs(diff_pct):.1f}%)
                 </p>
             </div>

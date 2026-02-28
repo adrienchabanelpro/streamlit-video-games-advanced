@@ -1,25 +1,16 @@
 """DataViz page: interactive charts with global search & filter controls."""
 
-import os
-
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-
-_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
-
-_PLOTLY_LAYOUT = dict(
-    template="plotly_dark",
-    paper_bgcolor="#0D0D0D",
-    plot_bgcolor="#1A1A2E",
-    font=dict(color="#E0E0E0"),
-)
+from config import CYAN, DATA_DIR, PINK, PLOTLY_LAYOUT, PURPLE, YELLOW
 
 
 @st.cache_data
-def load_dataviz_data():
-    df = pd.read_csv(os.path.join(_BASE_DIR, "data", "Ventes_jeux_video_final.csv"))
+def _load_dataviz_data() -> pd.DataFrame:
+    """Load and prepare the main dataset for visualization."""
+    df = pd.read_csv(DATA_DIR / "Ventes_jeux_video_final.csv")
     df = df.dropna(axis=0)
     df["Year"] = df["Year"].astype(str)
     df["Year"] = df["Year"].str[:-2]
@@ -28,9 +19,10 @@ def load_dataviz_data():
     return df
 
 
-def dataviz():
+def dataviz_page() -> None:
+    """Render the DataViz page with interactive filtered charts."""
     with st.spinner("Chargement des visualisations..."):
-        df = load_dataviz_data()
+        df = _load_dataviz_data()
 
     st.title("Page de DataViz")
 
@@ -74,6 +66,8 @@ def dataviz():
 
     st.markdown("---")
 
+    _REGION_COLORS = [CYAN, PINK, YELLOW, PURPLE]
+
     # ------------------------------------------------------------------
     # 1. Global sales over time
     # ------------------------------------------------------------------
@@ -89,18 +83,18 @@ def dataviz():
             y=sales_by_year,
             mode="lines+markers",
             name="Ventes annuelles",
-            line=dict(color="#00FFCC"),
+            line=dict(color=CYAN),
         )
     )
     fig.add_hline(
         y=mean_sales,
-        line=dict(color="#FF6EC7", dash="solid"),
+        line=dict(color=PINK, dash="solid"),
         annotation_text=f"Moyenne: {mean_sales:.2f} M",
         annotation_position="bottom right",
     )
     fig.add_hline(
         y=median_sales,
-        line=dict(color="#FFFF00", dash="dash"),
+        line=dict(color=YELLOW, dash="dash"),
         annotation_text=f"Mediane: {median_sales:.2f} M",
         annotation_position="bottom right",
     )
@@ -109,7 +103,7 @@ def dataviz():
         xaxis_title="Annee",
         yaxis_title="Ventes globales (millions)",
         legend_title="Legende",
-        **_PLOTLY_LAYOUT,
+        **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -130,12 +124,12 @@ def dataviz():
         x=df_sales_year.index,
         y=["NA_Sales", "EU_Sales", "JP_Sales", "Other_Sales"],
         title="Evolution des ventes par region",
-        color_discrete_sequence=["#00FFCC", "#FF6EC7", "#FFFF00", "#7B68EE"],
+        color_discrete_sequence=_REGION_COLORS,
     )
     fig.update_layout(
         xaxis_title="Annee",
         yaxis_title="Ventes (millions)",
-        **_PLOTLY_LAYOUT,
+        **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -149,17 +143,17 @@ def dataviz():
         title="Ventes totales par region",
         labels={"Total_Sales": "Ventes totales (millions)", "Region": "Region"},
         color="Region",
-        color_discrete_sequence=["#00FFCC", "#FF6EC7", "#FFFF00", "#7B68EE"],
+        color_discrete_sequence=_REGION_COLORS,
     )
     fig.update_layout(
         xaxis_title="Region",
         yaxis_title="Ventes totales (millions)",
-        **_PLOTLY_LAYOUT,
+        **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig, use_container_width=True)
 
     # ------------------------------------------------------------------
-    # 3. Regional vs global scatter (Plotly, replacing Matplotlib/seaborn)
+    # 3. Regional vs global scatter
     # ------------------------------------------------------------------
     st.header("Relation entre les ventes regionales et les ventes globales")
     region_cols = [
@@ -181,7 +175,7 @@ def dataviz():
             },
             opacity=0.6,
         )
-        fig.update_layout(**_PLOTLY_LAYOUT)
+        fig.update_layout(**PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
 
     # ------------------------------------------------------------------
@@ -216,9 +210,9 @@ def dataviz():
         title="Ventes par region pour les 10 principaux editeurs",
         labels={"Sales": "Ventes (millions)", "Publisher": "Editeur"},
         text_auto=True,
-        color_discrete_sequence=["#00FFCC", "#FF6EC7", "#FFFF00", "#7B68EE"],
+        color_discrete_sequence=_REGION_COLORS,
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     # ------------------------------------------------------------------
@@ -238,7 +232,7 @@ def dataviz():
     fig.update_layout(
         xaxis_tickangle=45,
         yaxis=dict(type="log", autorange=True),
-        **_PLOTLY_LAYOUT,
+        **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -264,7 +258,7 @@ def dataviz():
         fig.update_layout(
             xaxis_title="Annee",
             yaxis_title="Ventes globales (millions)",
-            **_PLOTLY_LAYOUT,
+            **PLOTLY_LAYOUT,
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -282,7 +276,7 @@ def dataviz():
         color="Genre",
         opacity=0.5,
     )
-    fig.update_layout(**_PLOTLY_LAYOUT)
+    fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     # ------------------------------------------------------------------
@@ -298,9 +292,9 @@ def dataviz():
             title="Ventes globales vs Meta Score",
             labels={"meta_score": "Meta Score", "Global_Sales": "Ventes (millions)"},
             log_y=True,
-            color_discrete_sequence=["#00FFCC"],
+            color_discrete_sequence=[CYAN],
         )
-        fig.update_layout(**_PLOTLY_LAYOUT)
+        fig.update_layout(**PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
 
     with col_b:
@@ -312,9 +306,9 @@ def dataviz():
             title="Ventes globales vs User Review",
             labels={"user_review": "User Review", "Global_Sales": "Ventes (millions)"},
             log_y=True,
-            color_discrete_sequence=["#FF6EC7"],
+            color_discrete_sequence=[PINK],
         )
-        fig.update_layout(**_PLOTLY_LAYOUT)
+        fig.update_layout(**PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
 
     # ------------------------------------------------------------------
@@ -343,7 +337,7 @@ def dataviz():
             title="Moyenne des avis joueurs par genre",
             labels={"user_review": "Avis joueurs"},
         )
-        fig.update_layout(yaxis_title="Avis joueurs", **_PLOTLY_LAYOUT)
+        fig.update_layout(yaxis_title="Avis joueurs", **PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
 
     with col_d:
@@ -356,5 +350,5 @@ def dataviz():
             title="Moyenne des avis presse par genre",
             labels={"meta_score": "Avis presse"},
         )
-        fig.update_layout(yaxis_title="Avis presse", **_PLOTLY_LAYOUT)
+        fig.update_layout(yaxis_title="Avis presse", **PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)

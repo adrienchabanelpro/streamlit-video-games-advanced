@@ -1,17 +1,20 @@
-import os
 from io import BytesIO
 
 import altair as alt
 import pandas as pd
 import requests
 import streamlit as st
+from config import IMAGES_DIR
 from PIL import Image
 
 
 # Fonction pour afficher la page méthodologie
-def methodologie():
+def methodologie_page() -> None:
+    """Render the project methodology page."""
+
     # Fonction pour charger une image depuis une URL
-    def load_image(url):
+    def load_image(url: str) -> Image.Image:
+        """Fetch an image from *url* and return a PIL Image."""
         response = requests.get(url)
         image = Image.open(BytesIO(response.content))
         return image
@@ -20,14 +23,14 @@ def methodologie():
     st.title("🕹️ Méthodologie du Projet 🎮")
 
     # Chemin de l'image locale
-    image_path = os.path.join(os.path.dirname(__file__), "..", "images", "collab.png")
+    image_path = IMAGES_DIR / "collab.png"
 
     # Afficher l'image sous le titre
-    if os.path.exists(image_path):
-        st.image(image_path, use_container_width=True)
+    if image_path.exists():
+        st.image(str(image_path), use_container_width=True)
     else:
         st.write(
-            f"Erreur : l'image {os.path.basename(image_path)} est introuvable. Vérifiez le dossier images/."
+            f"Erreur : l'image {image_path.name} est introuvable. Vérifiez le dossier images/."
         )
 
     # Présentation de la méthodologie

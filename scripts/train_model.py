@@ -25,6 +25,7 @@ Outputs saved to models/ and reports/:
 """
 
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -44,6 +45,8 @@ import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -489,7 +492,7 @@ def generate_shap_plots(
     plt.savefig(save_dir / "shap_bar.png", dpi=150, bbox_inches="tight")
     plt.close()
 
-    print(f"  SHAP plots saved to {save_dir}")
+    logger.info(f"  SHAP plots saved to {save_dir}")
 
 
 # ---------------------------------------------------------------------------
@@ -533,13 +536,13 @@ def save_artifacts(
     with open(REPORTS_DIR / "training_log.json", "w") as f:
         json.dump(log, f, indent=2)
 
-    print(f"  LightGBM  -> {REPORTS_DIR / 'model_v2_optuna.txt'}")
-    print(f"  XGBoost   -> {MODELS_DIR / 'model_v2_xgboost.json'}")
-    print(f"  CatBoost  -> {MODELS_DIR / 'model_v2_catboost.cbm'}")
-    print(f"  Scaler    -> {MODELS_DIR / 'scaler_v2.joblib'}")
-    print(f"  Encoder   -> {MODELS_DIR / 'target_encoder_v2.joblib'}")
-    print(f"  Stats     -> {MODELS_DIR / 'feature_means_v2.joblib'}")
-    print(f"  Log       -> {REPORTS_DIR / 'training_log.json'}")
+    logger.info(f"  LightGBM  -> {REPORTS_DIR / 'model_v2_optuna.txt'}")
+    logger.info(f"  XGBoost   -> {MODELS_DIR / 'model_v2_xgboost.json'}")
+    logger.info(f"  CatBoost  -> {MODELS_DIR / 'model_v2_catboost.cbm'}")
+    logger.info(f"  Scaler    -> {MODELS_DIR / 'scaler_v2.joblib'}")
+    logger.info(f"  Encoder   -> {MODELS_DIR / 'target_encoder_v2.joblib'}")
+    logger.info(f"  Stats     -> {MODELS_DIR / 'feature_means_v2.joblib'}")
+    logger.info(f"  Log       -> {REPORTS_DIR / 'training_log.json'}")
 
 
 # ---------------------------------------------------------------------------
@@ -547,24 +550,24 @@ def save_artifacts(
 # ---------------------------------------------------------------------------
 def _print_metrics(name: str, m: dict) -> None:
     """Pretty-print evaluation metrics for a model."""
-    print(f"  {name:12s}  R2={m['r2']:.4f}  RMSE={m['rmse']:.4f}  MAE={m['mae']:.4f}")
+    logger.info(f"  {name:12s}  R2={m['r2']:.4f}  RMSE={m['rmse']:.4f}  MAE={m['mae']:.4f}")
 
 
 def main() -> None:
     """Run the full training pipeline (LightGBM + XGBoost + CatBoost ensemble)."""
-    print("=" * 60)
-    print("Video Game Sales - Training Pipeline v2 (Ensemble)")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("Video Game Sales - Training Pipeline v2 (Ensemble)")
+    logger.info("=" * 60)
 
     # ---- 1. Load & clean ----
-    print("\n[1/9] Loading and cleaning data...")
+    logger.info("\n[1/9] Loading and cleaning data...")
     df = load_and_clean_data(DATA_DIR / "Ventes_jeux_video_final.csv")
-    print(f"  {len(df)} rows, {len(df.columns)} columns")
-    print(f"  Year range: {df['Year'].min()} - {df['Year'].max()}")
-    print(f"  Unique publishers: {df['Publisher'].nunique()}")
+    logger.info(f"  {len(df)} rows, {len(df.columns)} columns")
+    logger.info(f"  Year range: {df['Year'].min()} - {df['Year'].max()}")
+    logger.info(f"  Unique publishers: {df['Publisher'].nunique()}")
 
     # ---- 2. Optuna — LightGBM ----
-    print("\n[2/9] Optuna: LightGBM (50 trials)...")
+    logger.info("\n[2/9] Optuna: LightGBM (50 trials)...")
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     study_lgb = optuna.create_study(
         direction="maximize",
@@ -578,29 +581,29 @@ def main() -> None:
 
     best_lgb_params = study_lgb.best_params
     best_split_year = best_lgb_params["split_year"]
-    print(f"  Best CV R2: {study_lgb.best_value:.4f}")
-    print(f"  Best split_year: {best_split_year}")
+    logger.info(f"  Best CV R2: {study_lgb.best_value:.4f}")
+    logger.info(f"  Best split_year: {best_split_year}")
 
     # ---- 3. Prepare data with best split_year ----
-    print(f"\n[3/9] Splitting data at year {best_split_year}...")
+    logger.info(f"\n[3/9] Splitting data at year {best_split_year}...")
     df_train, df_test = temporal_train_test_split(df, best_split_year)
-    print(f"  Train: {len(df_train)} rows (<= {best_split_year})")
-    print(f"  Test:  {len(df_test)} rows (> {best_split_year})")
+    logger.info(f"  Train: {len(df_train)} rows (<= {best_split_year})")
+    logger.info(f"  Test:  {len(df_test)} rows (> {best_split_year})")
 
     # ---- 4. Feature engineering ----
-    print("\n[4/9] Feature engineering (train stats only)...")
+    logger.info("\n[4/9] Feature engineering (train stats only)...")
     train_stats = compute_train_stats(df_train)
     df_train = compute_engineered_features(df_train, train_stats)
     df_test = compute_engineered_features(df_test, train_stats)
 
-    print("  Fitting target encoder on Publisher...")
+    logger.info("  Fitting target encoder on Publisher...")
     encoder = ce.TargetEncoder(cols=["Publisher"], smoothing=10)
     df_train["Publisher_encoded"] = encoder.fit_transform(
         df_train[["Publisher"]], df_train[TARGET]
     )["Publisher"]
     df_test["Publisher_encoded"] = encoder.transform(df_test[["Publisher"]])["Publisher"]
 
-    print("  Fitting StandardScaler...")
+    logger.info("  Fitting StandardScaler...")
     scaler = StandardScaler()
     X_train = scaler.fit_transform(df_train[NUMERICAL_FEATURES])
     y_train_raw = df_train[TARGET].values
@@ -608,7 +611,7 @@ def main() -> None:
     y_test_raw = df_test[TARGET].values
 
     if LOG_TRANSFORM:
-        print("  Applying log1p transform to target...")
+        logger.info("  Applying log1p transform to target...")
         y_train = np.log1p(y_train_raw)
         y_test = y_test_raw  # Keep raw for evaluation (we'll inverse-transform preds)
     else:
@@ -616,7 +619,7 @@ def main() -> None:
         y_test = y_test_raw
 
     # ---- 5. Optuna — XGBoost ----
-    print("\n[5/9] Optuna: XGBoost (30 trials)...")
+    logger.info("\n[5/9] Optuna: XGBoost (30 trials)...")
     study_xgb = optuna.create_study(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE + 1),
@@ -627,10 +630,10 @@ def main() -> None:
         show_progress_bar=True,
     )
     best_xgb_params = study_xgb.best_params
-    print(f"  Best CV R2: {study_xgb.best_value:.4f}")
+    logger.info(f"  Best CV R2: {study_xgb.best_value:.4f}")
 
     # ---- 6. Optuna — CatBoost ----
-    print("\n[6/9] Optuna: CatBoost (30 trials)...")
+    logger.info("\n[6/9] Optuna: CatBoost (30 trials)...")
     study_cb = optuna.create_study(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE + 2),
@@ -641,19 +644,19 @@ def main() -> None:
         show_progress_bar=True,
     )
     best_cb_params = study_cb.best_params
-    print(f"  Best CV R2: {study_cb.best_value:.4f}")
+    logger.info(f"  Best CV R2: {study_cb.best_value:.4f}")
 
     # ---- 7. Train final models ----
-    print("\n[7/9] Training final models...")
+    logger.info("\n[7/9] Training final models...")
     lgb_model = train_final_model(X_train, y_train, best_lgb_params)
-    print("  LightGBM trained")
+    logger.info("  LightGBM trained")
     xgb_model = train_final_xgb(X_train, y_train, best_xgb_params)
-    print("  XGBoost trained")
+    logger.info("  XGBoost trained")
     cb_model = train_final_cb(X_train, y_train, best_cb_params)
-    print("  CatBoost trained")
+    logger.info("  CatBoost trained")
 
     # ---- 8. Evaluate all models + ensemble ----
-    print("\n[8/9] Evaluating on test set...")
+    logger.info("\n[8/9] Evaluating on test set...")
     gm = train_stats["global_sales_mean"]
     metrics_lgb = evaluate_model(lgb_model, X_test, y_test, gm)
     metrics_xgb = evaluate_model(xgb_model, X_test, y_test, gm)
@@ -664,17 +667,17 @@ def main() -> None:
     _print_metrics("XGBoost", metrics_xgb)
     _print_metrics("CatBoost", metrics_cb)
     _print_metrics("Ensemble", metrics_ens)
-    print(
+    logger.info(
         f"  {'Baseline':12s}  R2={metrics_lgb['baseline_r2']:.4f}  "
         f"RMSE={metrics_lgb['baseline_rmse']:.4f}"
     )
 
     # ---- 9. SHAP (using LightGBM) ----
-    print("\n[9/9] Generating SHAP plots (LightGBM)...")
+    logger.info("\n[9/9] Generating SHAP plots (LightGBM)...")
     generate_shap_plots(lgb_model, X_test, NUMERICAL_FEATURES, REPORTS_DIR)
 
     # ---- Save ----
-    print("\nSaving artifacts...")
+    logger.info("\nSaving artifacts...")
     all_params = {
         "lightgbm": best_lgb_params,
         "xgboost": best_xgb_params,
@@ -697,10 +700,15 @@ def main() -> None:
         all_metrics,
     )
 
-    print("\n" + "=" * 60)
-    print("Training complete! (3 models + ensemble)")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("Training complete! (3 models + ensemble)")
+    logger.info("=" * 60)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S",
+    )
     main()

@@ -1,5 +1,6 @@
+"""Prediction page: single and batch predictions using the 3-model ensemble."""
+
 import json
-import os
 import warnings
 
 import catboost as cb
@@ -9,10 +10,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import xgboost as xgb
+from config import IMAGES_DIR, MODELS_DIR, REPORTS_DIR
 
 warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
-
-_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 
 # Feature order must match training script exactly
 _NUMERICAL_FEATURES = [
@@ -32,34 +32,36 @@ _NUMERICAL_FEATURES = [
 @st.cache_resource
 def load_models():
     """Load all 3 ensemble models (LightGBM, XGBoost, CatBoost)."""
-    lgb_model = lgb.Booster(model_file=os.path.join(_BASE_DIR, "reports", "model_v2_optuna.txt"))
+    lgb_model = lgb.Booster(model_file=str(REPORTS_DIR / "model_v2_optuna.txt"))
     xgb_model = xgb.XGBRegressor()
-    xgb_model.load_model(os.path.join(_BASE_DIR, "models", "model_v2_xgboost.json"))
+    xgb_model.load_model(str(MODELS_DIR / "model_v2_xgboost.json"))
     cb_model = cb.CatBoostRegressor()
-    cb_model.load_model(os.path.join(_BASE_DIR, "models", "model_v2_catboost.cbm"))
+    cb_model.load_model(str(MODELS_DIR / "model_v2_catboost.cbm"))
     return lgb_model, xgb_model, cb_model
 
 
 @st.cache_resource
 def load_numerical_transformer():
-    return joblib.load(os.path.join(_BASE_DIR, "models", "scaler_v2.joblib"))
+    return joblib.load(MODELS_DIR / "scaler_v2.joblib")
 
 
 @st.cache_resource
 def load_target_encoder():
-    return joblib.load(os.path.join(_BASE_DIR, "models", "target_encoder_v2.joblib"))
+    """Load the target encoder for Publisher column."""
+    return joblib.load(MODELS_DIR / "target_encoder_v2.joblib")
 
 
 @st.cache_resource
 def load_feature_means():
-    return joblib.load(os.path.join(_BASE_DIR, "models", "feature_means_v2.joblib"))
+    """Load pre-computed feature means from training data."""
+    return joblib.load(MODELS_DIR / "feature_means_v2.joblib")
 
 
 @st.cache_data
 def _is_log_transformed() -> bool:
     """Check if the trained model used log-transform on the target."""
-    log_path = os.path.join(_BASE_DIR, "reports", "training_log.json")
-    if os.path.exists(log_path):
+    log_path = REPORTS_DIR / "training_log.json"
+    if log_path.exists():
         with open(log_path) as f:
             return json.load(f).get("log_transform", False)
     return False
@@ -157,7 +159,63 @@ def prepare_for_prediction(df_input: pd.DataFrame, publisher_input: str) -> pd.D
     return df_input
 
 
-def prediction_page():
+def predict_single(
+    lgb_model: lgb.Booster,
+    xgb_model: xgb.XGBRegressor,
+    cb_model: cb.CatBoostRegressor,
+    scaler: object,
+    encoder: object,
+    train_stats: dict,
+    genre: str,
+    platform: str,
+    publisher: str,
+    year: int,
+    meta_score: float,
+    user_review: float,
+) -> float:
+    """Build features and run ensemble prediction for a single game configuration."""
+    input_data: dict[str, float] = {
+        "Year": year,
+        "meta_score": meta_score,
+        "user_review": user_review,
+    }
+
+    input_data["Global_Sales_mean_genre"] = train_stats["genre_means"].get(
+        genre, train_stats["global_sales_mean"]
+    )
+    input_data["Global_Sales_mean_platform"] = train_stats["platform_means"].get(
+        platform, train_stats["global_sales_mean"]
+    )
+    input_data["Year_Global_Sales_mean_genre"] = (
+        input_data["Year"] * input_data["Global_Sales_mean_genre"]
+    )
+    input_data["Year_Global_Sales_mean_platform"] = (
+        input_data["Year"] * input_data["Global_Sales_mean_platform"]
+    )
+    input_data["Cumulative_Sales_Genre"] = _lookup_cumulative(
+        train_stats["cumsum_genre"], genre, year
+    )
+    input_data["Cumulative_Sales_Platform"] = _lookup_cumulative(
+        train_stats["cumsum_platform"], platform, year
+    )
+
+    pub_df = pd.DataFrame({"Publisher": [publisher]})
+    input_data["Publisher_encoded"] = encoder.transform(pub_df)["Publisher"].values[0]
+
+    df = pd.DataFrame(input_data, index=[0])
+    df[_NUMERICAL_FEATURES] = scaler.transform(df[_NUMERICAL_FEATURES])
+
+    X = df[_NUMERICAL_FEATURES]
+    pred_lgb = lgb_model.predict(X)
+    pred_xgb = xgb_model.predict(X.values)
+    pred_cb = cb_model.predict(X.values)
+    result = float((pred_lgb + pred_xgb + pred_cb) / 3)
+    if _is_log_transformed():
+        result = float(np.expm1(result))
+    return result
+
+
+def prediction_page() -> None:
     st.title("Prediction des ventes de jeux video")
 
     try:
@@ -206,13 +264,12 @@ def prediction_page():
     )
 
     # Arcade machine image
-    image_path = os.path.join(os.path.dirname(__file__), "..", "images", "street_arcade.jpg")
-    if os.path.exists(image_path):
-        st.image(image_path, width=1000)
+    image_path = IMAGES_DIR / "street_arcade.jpg"
+    if image_path.exists():
+        st.image(str(image_path), width=1000)
     else:
         st.write(
-            f"Erreur : l'image {os.path.basename(image_path)} est introuvable. "
-            "Verifiez le dossier images/."
+            f"Erreur : l'image {image_path.name} est introuvable. Verifiez le dossier images/."
         )
 
     # User inputs (dropdowns populated from training stats)

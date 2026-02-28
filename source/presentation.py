@@ -1,31 +1,27 @@
 # presentation.py
-import os
-
 import pandas as pd
 import streamlit as st
-
-_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
+from config import DATA_DIR, IMAGES_DIR
 
 
 @st.cache_data
-def _load_presentation_data():
-    return pd.read_csv(os.path.join(_BASE_DIR, "data", "Ventes_jeux_video_final.csv"))
+def _load_presentation_data() -> pd.DataFrame:
+    """Load the main video game sales dataset for the presentation page."""
+    return pd.read_csv(DATA_DIR / "Ventes_jeux_video_final.csv")
 
 
-def presentation_et_objectif():
-    # Obtenir le chemin absolu du dossier contenant ce fichier
-    base_path = os.path.dirname(__file__)
-
+def presentation_page() -> None:
+    """Render the project presentation and objectives page."""
     # Construire les chemins absolus pour les images
-    image_path1 = os.path.join(base_path, "..", "images", "image_pres.png")
-    image_path2 = os.path.join(base_path, "..", "images", "street.png")
+    image_path1 = IMAGES_DIR / "image_pres.png"
+    image_path2 = IMAGES_DIR / "street.png"
 
     # Vérifier et afficher les images
     for image_path in [image_path1, image_path2]:
-        if os.path.exists(image_path):
-            st.image(image_path, use_container_width=True)
+        if image_path.exists():
+            st.image(str(image_path), use_container_width=True)
         else:
-            st.write(f"Erreur : l'image {os.path.basename(image_path)} est introuvable.")
+            st.write(f"Erreur : l'image {image_path.name} est introuvable.")
 
     st.title("Présentation du projet")
 
@@ -48,11 +44,11 @@ def presentation_et_objectif():
     Voici une description détaillée des jeux de données utilisés :
 
     ### VGChartz
-    16500 lignes 
-                 
+    16500 lignes
+
     ### Statistiques des Jeux Vidéos
     62000 lignes
-                
+
     Initialement, nous avons utilisé les données disponibles sur VGChartz. Cependant, nous avons constaté que certaines informations cruciales manquaient. Pour pallier ce manque, nous avons :
 
     - **Rescrappé VGChartz** : Pour obtenir une version plus complète et actualisée des données de vente.
@@ -60,7 +56,7 @@ def presentation_et_objectif():
 
     ### Metacritic
     18799 lignes
-                
+
     ### Volumétrie du Jeu de Données Final
     Après avoir combiné les données scrappées de VGChartz, Metacritic et le jeu de données supplémentaires, notre DataFrame final nettoyé contient plus de 14 500 entrées (sans outliers) et 16 325 (avec outliers).
     """)

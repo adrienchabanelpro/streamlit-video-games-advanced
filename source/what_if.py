@@ -1,81 +1,19 @@
 """What-if analysis: interactive exploration of how each feature impacts predictions."""
 
 import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from config import CYAN, PINK, PLOTLY_LAYOUT
 from prediction import (
-    _NUMERICAL_FEATURES,
-    _is_log_transformed,
-    _lookup_cumulative,
     load_feature_means,
     load_models,
     load_numerical_transformer,
     load_target_encoder,
+    predict_single,
 )
 
 
-def _predict_single(
-    lgb_model,
-    xgb_model,
-    cb_model,
-    scaler,
-    encoder,
-    train_stats: dict,
-    genre: str,
-    platform: str,
-    publisher: str,
-    year: int,
-    meta_score: float,
-    user_review: float,
-) -> float:
-    """Build features and run ensemble prediction for a single input."""
-    input_data = {
-        "Year": year,
-        "meta_score": meta_score,
-        "user_review": user_review,
-    }
-
-    # Feature engineering
-    input_data["Global_Sales_mean_genre"] = train_stats["genre_means"].get(
-        genre, train_stats["global_sales_mean"]
-    )
-    input_data["Global_Sales_mean_platform"] = train_stats["platform_means"].get(
-        platform, train_stats["global_sales_mean"]
-    )
-    input_data["Year_Global_Sales_mean_genre"] = (
-        input_data["Year"] * input_data["Global_Sales_mean_genre"]
-    )
-    input_data["Year_Global_Sales_mean_platform"] = (
-        input_data["Year"] * input_data["Global_Sales_mean_platform"]
-    )
-    input_data["Cumulative_Sales_Genre"] = _lookup_cumulative(
-        train_stats["cumsum_genre"], genre, year
-    )
-    input_data["Cumulative_Sales_Platform"] = _lookup_cumulative(
-        train_stats["cumsum_platform"], platform, year
-    )
-
-    # Target encode publisher
-    pub_df = pd.DataFrame({"Publisher": [publisher]})
-    input_data["Publisher_encoded"] = encoder.transform(pub_df)["Publisher"].values[0]
-
-    # Build DataFrame and scale
-    df = pd.DataFrame(input_data, index=[0])
-    df[_NUMERICAL_FEATURES] = scaler.transform(df[_NUMERICAL_FEATURES])
-
-    # Ensemble prediction
-    X = df[_NUMERICAL_FEATURES]
-    pred_lgb = lgb_model.predict(X)
-    pred_xgb = xgb_model.predict(X.values)
-    pred_cb = cb_model.predict(X.values)
-    result = float((pred_lgb + pred_xgb + pred_cb) / 3)
-    if _is_log_transformed():
-        result = float(np.expm1(result))
-    return result
-
-
-def what_if_page():
+def what_if_page() -> None:
     """What-if analysis page: sweep one variable and see impact on predictions."""
     st.title("Analyse What-If")
     st.write(
@@ -151,7 +89,7 @@ def what_if_page():
                 user = float(val) if sweep_var == "user_review" else base_user
                 yr = int(val) if sweep_var == "Year" else year
 
-                pred = _predict_single(
+                pred = predict_single(
                     lgb_model,
                     xgb_model,
                     cb_model,
@@ -175,7 +113,7 @@ def what_if_page():
                 y=predictions,
                 mode="lines+markers",
                 name="Ventes predites",
-                line=dict(color="#00FFCC", width=3),
+                line=dict(color=CYAN, width=3),
                 marker=dict(size=4),
             )
         )
@@ -188,7 +126,7 @@ def what_if_page():
         else:
             base_val = year
 
-        base_pred = _predict_single(
+        base_pred = predict_single(
             lgb_model,
             xgb_model,
             cb_model,
@@ -208,7 +146,7 @@ def what_if_page():
                 y=[base_pred],
                 mode="markers",
                 name="Valeur de base",
-                marker=dict(color="#FF6EC7", size=14, symbol="star"),
+                marker=dict(color=PINK, size=14, symbol="star"),
             )
         )
 
@@ -216,10 +154,7 @@ def what_if_page():
             title=f"Impact de {x_label} sur les ventes predites",
             xaxis_title=x_label,
             yaxis_title="Ventes predites (millions)",
-            template="plotly_dark",
-            paper_bgcolor="#0D0D0D",
-            plot_bgcolor="#1A1A2E",
-            font=dict(color="#E0E0E0"),
+            **PLOTLY_LAYOUT,
         )
 
         st.plotly_chart(fig, use_container_width=True)

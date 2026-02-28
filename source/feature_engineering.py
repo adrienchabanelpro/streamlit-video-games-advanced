@@ -1,18 +1,17 @@
-import os
-
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
-
-_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
+from config import DATA_DIR
 
 
 @st.cache_data
-def _load_feature_data():
-    return pd.read_csv(os.path.join(_BASE_DIR, "data", "df_topfeats.csv"))
+def _load_feature_data() -> pd.DataFrame:
+    """Load feature engineering example dataset."""
+    return pd.read_csv(DATA_DIR / "df_topfeats.csv")
 
 
-def feature_engineering():
+def feature_engineering_page() -> None:
+    """Render the feature engineering and pre-processing page."""
 
     # Titre et description
     st.title("Feature Engineering et Pre-processing")

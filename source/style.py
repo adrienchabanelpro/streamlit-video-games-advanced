@@ -2,7 +2,7 @@
 import streamlit as st
 
 
-def apply_style():
+def apply_style() -> None:
     """Inject global CSS for the retro neon dark theme."""
     st.markdown(
         """

@@ -1,25 +1,23 @@
-import os
-
 import streamlit as st
+from config import IMAGES_DIR
 from PIL import Image
 
 
-def perspectives():
+def perspectives_page() -> None:
+    """Render the perspectives and future improvements page."""
     # Titre de la page
     st.title("Perspectives")
 
-    images_dir = os.path.join(os.path.dirname(__file__), "..", "images")
-
     # Chemin du GIF local
-    gif_path = os.path.join(images_dir, "ryu-ken.gif")
+    gif_path = IMAGES_DIR / "ryu-ken.gif"
     # Afficher le GIF sous le titre
-    if os.path.exists(gif_path):
-        st.image(gif_path, use_container_width=True)
+    if gif_path.exists():
+        st.image(str(gif_path), use_container_width=True)
     else:
         st.write("Erreur : le GIF de perspectives est introuvable.")
 
-    # Section 12.1 - Pistes d’amélioration pour le modèle
-    st.subheader("Pistes d’amélioration pour le modèle")
+    # Section 12.1 - Pistes d'amélioration pour le modèle
+    st.subheader("Pistes d'amélioration pour le modèle")
     st.write("""
     Afin d'améliorer la pertinence et la précision de notre modèle, plusieurs pistes ont été envisagées :
     """)
@@ -34,7 +32,7 @@ def perspectives():
         st.write(f"**{i + 1}.** {improvement}")
 
     st.write("""
-    En intégrant ces pistes d’amélioration, nous visons à renforcer la robustesse et la précision de notre modèle, offrant ainsi des insights plus pertinents et fiables pour l’analyse du marché des jeux vidéo.
+    En intégrant ces pistes d'amélioration, nous visons à renforcer la robustesse et la précision de notre modèle, offrant ainsi des insights plus pertinents et fiables pour l'analyse du marché des jeux vidéo.
     """)
 
     # Section 12.2 - Contributions à la connaissance scientifique
@@ -98,16 +96,18 @@ def perspectives():
         if score == len(quiz_questions):
             st.balloons()
             st.write("Félicitations ! Vous avez tout juste.")
-            try:
-                image = Image.open(os.path.join(images_dir, "youwin.png"))
+            youwin_path = IMAGES_DIR / "youwin.png"
+            if youwin_path.exists():
+                image = Image.open(youwin_path)
                 st.image(image, caption="You Win!")
-            except FileNotFoundError:
+            else:
                 st.warning("Image youwin.png introuvable.")
         else:
-            try:
-                image = Image.open(os.path.join(images_dir, "game_over.png"))
+            gameover_path = IMAGES_DIR / "game_over.png"
+            if gameover_path.exists():
+                image = Image.open(gameover_path)
                 st.image(image, caption="Game Over")
-            except FileNotFoundError:
+            else:
                 st.warning("Image game_over.png introuvable.")
             st.write("Réessayez pour améliorer votre score.")
 
