@@ -22,7 +22,7 @@ SALES_SCHEMA: DataFrameSchema = DataFrameSchema(
         "Year": Column(
             pa.Float,
             checks=[
-                Check.greater_than_or_equal_to(1980),
+                Check.greater_than_or_equal_to(1970),
                 Check.less_than_or_equal_to(2030),
             ],
             nullable=True,
