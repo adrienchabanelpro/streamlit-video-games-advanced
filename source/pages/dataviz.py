@@ -23,8 +23,9 @@ def _load_dataviz_data() -> pd.DataFrame:
     df = df.dropna(subset=["Year", "Genre", "Platform", "Publisher", "Global_Sales"])
     df["Year"] = df["Year"].astype(int)
     # Fill optional scores with median for charts that use them
-    df["meta_score"] = df["meta_score"].fillna(df["meta_score"].median())
-    df["user_review"] = df["user_review"].fillna(df["user_review"].median())
+    # (fallback to 0 if median is NaN, e.g. user_review is 100% NaN in 64K dataset)
+    df["meta_score"] = df["meta_score"].fillna(df["meta_score"].median()).fillna(0)
+    df["user_review"] = df["user_review"].fillna(df["user_review"].median()).fillna(0)
     return df
 
 
@@ -274,39 +275,41 @@ def dataviz_page() -> None:
     # ------------------------------------------------------------------
     # 7. Meta Score vs User Review
     # ------------------------------------------------------------------
-    st.header("Correlation entre Meta Score et User Review")
-    fig = px.scatter(
-        df_f,
-        x="meta_score",
-        y="user_review",
-        title="Relation entre Meta Score et User Review",
-        labels={"meta_score": "Meta Score", "user_review": "User Review"},
-        trendline="ols",
-        color="Genre",
-        opacity=0.5,
-    )
-    fig.update_layout(**PLOTLY_LAYOUT)
-    st.plotly_chart(fig, use_container_width=True)
+    # Check if user_review has meaningful data (not all zeros / all same value)
+    _has_user_review = df_f["user_review"].nunique() > 1
 
-    # ------------------------------------------------------------------
-    # 8. Sales by Meta Score / User Review
-    # ------------------------------------------------------------------
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.header("Ventes vs Meta Score")
-        fig = px.histogram(
+    if _has_user_review:
+        st.header("Correlation entre Meta Score et User Review")
+        fig = px.scatter(
             df_f,
             x="meta_score",
-            y="Global_Sales",
-            title="Ventes globales vs Meta Score",
-            labels={"meta_score": "Meta Score", "Global_Sales": "Ventes (millions)"},
-            log_y=True,
-            color_discrete_sequence=[CYAN],
+            y="user_review",
+            title="Relation entre Meta Score et User Review",
+            labels={"meta_score": "Meta Score", "user_review": "User Review"},
+            trendline="ols",
+            color="Genre",
+            opacity=0.5,
         )
         fig.update_layout(**PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
 
-    with col_b:
+    # ------------------------------------------------------------------
+    # 8. Sales by Meta Score / User Review
+    # ------------------------------------------------------------------
+    st.header("Ventes vs Meta Score")
+    fig = px.histogram(
+        df_f,
+        x="meta_score",
+        y="Global_Sales",
+        title="Ventes globales vs Meta Score",
+        labels={"meta_score": "Meta Score", "Global_Sales": "Ventes (millions)"},
+        log_y=True,
+        color_discrete_sequence=[CYAN],
+    )
+    fig.update_layout(**PLOTLY_LAYOUT)
+    st.plotly_chart(fig, use_container_width=True)
+
+    if _has_user_review:
         st.header("Ventes vs User Review")
         fig = px.histogram(
             df_f,
@@ -321,23 +324,34 @@ def dataviz_page() -> None:
         st.plotly_chart(fig, use_container_width=True)
 
     # ------------------------------------------------------------------
-    # 9. Median scores by genre
+    # 9. Average scores by genre
     # ------------------------------------------------------------------
-    st.header("Moyenne des avis par genre")
+    st.header("Moyenne des avis presse par genre")
     df_score = (
         df_f.groupby("Genre")
-        .agg(
-            {
-                "user_review": "mean",
-                "meta_score": "mean",
-            }
-        )
+        .agg(meta_score=("meta_score", "mean"))
         .reset_index()
     )
 
-    col_c, col_d = st.columns(2)
-    with col_c:
-        df_sorted = df_score.sort_values("user_review")
+    df_sorted = df_score.sort_values("meta_score")
+    fig = px.bar(
+        df_sorted,
+        x="Genre",
+        y="meta_score",
+        color="Genre",
+        title="Moyenne des avis presse par genre",
+        labels={"meta_score": "Avis presse"},
+    )
+    fig.update_layout(yaxis_title="Avis presse", **PLOTLY_LAYOUT)
+    st.plotly_chart(fig, use_container_width=True)
+
+    if _has_user_review:
+        df_score_user = (
+            df_f.groupby("Genre")
+            .agg(user_review=("user_review", "mean"))
+            .reset_index()
+        )
+        df_sorted = df_score_user.sort_values("user_review")
         fig = px.bar(
             df_sorted,
             x="Genre",
@@ -347,17 +361,4 @@ def dataviz_page() -> None:
             labels={"user_review": "Avis joueurs"},
         )
         fig.update_layout(yaxis_title="Avis joueurs", **PLOTLY_LAYOUT)
-        st.plotly_chart(fig, use_container_width=True)
-
-    with col_d:
-        df_sorted = df_score.sort_values("meta_score")
-        fig = px.bar(
-            df_sorted,
-            x="Genre",
-            y="meta_score",
-            color="Genre",
-            title="Moyenne des avis presse par genre",
-            labels={"meta_score": "Avis presse"},
-        )
-        fig.update_layout(yaxis_title="Avis presse", **PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
