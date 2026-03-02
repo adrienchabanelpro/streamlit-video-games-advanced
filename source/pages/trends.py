@@ -122,39 +122,22 @@ def _genre_trends(df: pd.DataFrame) -> None:
     # Average scores over time
     scores = (
         df_g.groupby(["Year", "Genre"])
-        .agg(
-            meta_score=("meta_score", "mean"),
-            user_review=("user_review", "mean"),
-        )
+        .agg(meta_score=("meta_score", "mean"))
         .reset_index()
     )
 
-    col1, col2 = st.columns(2)
-    with col1:
-        fig = px.line(
-            scores,
-            x="Year",
-            y="meta_score",
-            color="Genre",
-            title="Score Metacritic moyen par genre",
-            labels={"meta_score": "Metacritic", "Year": "Annee"},
-            markers=True,
-        )
-        fig.update_layout(**PLOTLY_LAYOUT)
-        st.plotly_chart(fig, use_container_width=True)
-
-    with col2:
-        fig = px.line(
-            scores,
-            x="Year",
-            y="user_review",
-            color="Genre",
-            title="Score utilisateur moyen par genre",
-            labels={"user_review": "Score utilisateur", "Year": "Annee"},
-            markers=True,
-        )
-        fig.update_layout(**PLOTLY_LAYOUT)
-        st.plotly_chart(fig, use_container_width=True)
+    st.subheader("Score Metacritic moyen par genre")
+    fig = px.line(
+        scores,
+        x="Year",
+        y="meta_score",
+        color="Genre",
+        title="Score Metacritic moyen par genre",
+        labels={"meta_score": "Metacritic", "Year": "Annee"},
+        markers=True,
+    )
+    fig.update_layout(**PLOTLY_LAYOUT)
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ------------------------------------------------------------------

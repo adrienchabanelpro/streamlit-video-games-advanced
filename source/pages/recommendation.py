@@ -22,8 +22,8 @@ def _load_games_data() -> pd.DataFrame:
         )
     df = df.dropna(subset=["Name", "Genre", "Platform", "Publisher", "Year"])
     df["Year"] = df["Year"].astype(int)
-    df["meta_score"] = df["meta_score"].fillna(df["meta_score"].median())
-    df["user_review"] = df["user_review"].fillna(df["user_review"].median())
+    df["meta_score"] = df["meta_score"].fillna(df["meta_score"].median()).fillna(0)
+    df["user_review"] = df["user_review"].fillna(df["user_review"].median()).fillna(0)
     return df.reset_index(drop=True)
 
 

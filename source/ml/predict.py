@@ -63,7 +63,14 @@ def load_target_encoder() -> object:
 
 def load_feature_means() -> dict:
     """Load pre-computed feature means from training data."""
-    return joblib.load(MODELS_DIR / "feature_means_v2.joblib")
+    import math
+
+    stats = joblib.load(MODELS_DIR / "feature_means_v2.joblib")
+    # Safety: replace NaN means with 0.0 (user_review is 100% NaN in 64K dataset)
+    for key in ("meta_score_mean", "user_review_mean"):
+        if key in stats and (stats[key] is None or math.isnan(stats[key])):
+            stats[key] = 0.0
+    return stats
 
 
 def is_log_transformed() -> bool:
