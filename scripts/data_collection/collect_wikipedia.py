@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 import time
+from io import StringIO
 from pathlib import Path
 
 import pandas as pd
@@ -23,6 +24,10 @@ OUTPUT_PATH = RAW_DIR / "wikipedia_sales.csv"
 
 # Wikipedia API endpoint for parsing HTML tables
 WIKI_API = "https://en.wikipedia.org/w/api.php"
+HEADERS = {
+    "User-Agent": "VideoGameSalesPredictor/1.0 (academic research project; Python/requests)",
+    "Accept": "application/json",
+}
 
 # Pages to scrape for sales data
 WIKI_PAGES = [
@@ -46,20 +51,6 @@ RATE_LIMIT_SECONDS = 1.0
 
 def _fetch_wiki_tables(page_title: str) -> list[pd.DataFrame]:
     """Fetch all HTML tables from a Wikipedia page via the API."""
-    params = {
-        "action": "parse",
-        "page": page_title,
-        "prop": "wikitext",
-        "format": "json",
-    }
-    try:
-        resp = requests.get(WIKI_API, params=params, timeout=30)
-        resp.raise_for_status()
-    except Exception as exc:
-        print(f"[wikipedia] ERROR fetching {page_title}: {exc}")
-        return []
-
-    # Use the simpler HTML table parsing approach
     params_html = {
         "action": "parse",
         "page": page_title,
@@ -67,7 +58,7 @@ def _fetch_wiki_tables(page_title: str) -> list[pd.DataFrame]:
         "format": "json",
     }
     try:
-        resp = requests.get(WIKI_API, params=params_html, timeout=30)
+        resp = requests.get(WIKI_API, params=params_html, headers=HEADERS, timeout=30)
         resp.raise_for_status()
         html = resp.json().get("parse", {}).get("text", {}).get("*", "")
     except Exception as exc:
@@ -75,10 +66,10 @@ def _fetch_wiki_tables(page_title: str) -> list[pd.DataFrame]:
         return []
 
     try:
-        tables = pd.read_html(html, flavor="lxml")
+        tables = pd.read_html(StringIO(html), flavor="lxml")
     except Exception:
         try:
-            tables = pd.read_html(html)
+            tables = pd.read_html(StringIO(html))
         except Exception as exc:
             print(f"[wikipedia] No tables found in {page_title}: {exc}")
             return []

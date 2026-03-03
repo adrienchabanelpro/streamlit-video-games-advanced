@@ -39,5 +39,8 @@ mlflow.db
 # Raw data downloads (large, re-downloadable)
 data/raw/
 
+# Merged v3 dataset (large, regeneratable via merge pipeline)
+data/Ventes_jeux_video_v3.csv
+
 # Data collection progress files
 scripts/data_collection/*_progress.json

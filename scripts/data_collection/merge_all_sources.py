@@ -63,8 +63,24 @@ def _fuzzy_match_col(
     target_lookup: dict[str, int],
     threshold: int = 85,
     label: str = "source",
+    max_fuzzy_targets: int = 25_000,
 ) -> dict[int, tuple[int, int]]:
     """Match source rows to target rows via exact + fuzzy matching.
+
+    Parameters
+    ----------
+    source_names:
+        Names to match (e.g., VGChartz names).
+    target_lookup:
+        Normalized name -> index mapping for the target source.
+    threshold:
+        Minimum fuzzy match score (0-100).
+    label:
+        Display label for logging.
+    max_fuzzy_targets:
+        Maximum target names for fuzzy phase. If the target has more
+        names than this, fuzzy matching is skipped (exact only) to
+        avoid O(N*M) blowup with very large sources like IGDB (200K+).
 
     Returns
     -------
@@ -93,21 +109,27 @@ def _fuzzy_match_col(
 
     print(f"  [{label}] Exact: {exact:,} matches")
 
-    # Phase 2: fuzzy
-    if unmatched_src:
+    # Phase 2: fuzzy (skip for very large target sets to avoid O(N*M) blowup)
+    if unmatched_src and len(target_names) <= max_fuzzy_targets:
         fuzzy = 0
         total = len(unmatched_src)
         for i, (src_idx, norm) in enumerate(unmatched_src):
-            if (i + 1) % 10_000 == 0:
+            if (i + 1) % 5_000 == 0:
                 print(f"  [{label}] Fuzzy: {i + 1:,}/{total:,}...")
             result = process.extractOne(
-                norm, target_names, scorer=fuzz.WRatio, score_cutoff=threshold
+                norm, target_names, scorer=fuzz.WRatio,
+                score_cutoff=threshold, processor=None,
             )
             if result is not None:
                 match_name, score, _ = result
                 matches[src_idx] = (name_to_idx[match_name], int(score))
                 fuzzy += 1
         print(f"  [{label}] Fuzzy: {fuzzy:,} matches (threshold={threshold})")
+    elif unmatched_src:
+        print(
+            f"  [{label}] Fuzzy: SKIPPED ({len(target_names):,} targets > "
+            f"{max_fuzzy_targets:,} limit, {len(unmatched_src):,} unmatched)"
+        )
 
     return matches
 

@@ -32,16 +32,37 @@ BATCH_SIZE = 100  # Save progress every N apps
 
 
 def _get_all_app_ids() -> list[dict]:
-    """Fetch the complete list of Steam app IDs."""
+    """Get Steam app IDs from the Steam API or fallback to SteamSpy data."""
+    # Try the Steam API first
     try:
         resp = requests.get(APP_LIST_URL, timeout=30)
         resp.raise_for_status()
         apps = resp.json().get("applist", {}).get("apps", [])
-        # Filter to only apps with names (removes test entries)
-        return [a for a in apps if a.get("name", "").strip()]
+        filtered = [a for a in apps if a.get("name", "").strip()]
+        if filtered:
+            return filtered
     except Exception as exc:
-        print(f"[steam_store] ERROR fetching app list: {exc}")
-        return []
+        print(f"[steam_store] Steam API app list unavailable: {exc}")
+
+    # Fallback: load app IDs from SteamSpy data
+    steamspy_path = RAW_DIR / "steamspy_all.csv"
+    if steamspy_path.exists():
+        import pandas as pd
+
+        df = pd.read_csv(steamspy_path)
+        appid_col = "appid" if "appid" in df.columns else "steam_appid"
+        name_col = "name" if "name" in df.columns else "Name"
+        if appid_col in df.columns and name_col in df.columns:
+            apps = [
+                {"appid": int(row[appid_col]), "name": str(row[name_col])}
+                for _, row in df.iterrows()
+                if pd.notna(row[appid_col]) and str(row[name_col]).strip()
+            ]
+            print(f"[steam_store] Using {len(apps):,} app IDs from SteamSpy data")
+            return apps
+
+    print("[steam_store] ERROR: No app ID source available")
+    return []
 
 
 def _load_progress() -> dict:
