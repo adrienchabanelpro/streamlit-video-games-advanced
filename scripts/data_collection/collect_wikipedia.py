@@ -77,11 +77,20 @@ def _fetch_wiki_tables(page_title: str) -> list[pd.DataFrame]:
     return tables
 
 
-def _extract_sales_number(value: str) -> float | None:
+def _extract_sales_number(value: str, column_hint: str = "") -> float | None:
     """Extract a numeric sales figure from a Wikipedia cell.
 
     Handles formats like: '30 million', '30,000,000', '30M', '30.5 million'.
     Returns sales in millions.
+
+    Parameters
+    ----------
+    value:
+        The raw cell text (e.g. "30 million", "1,000,000", "5.2").
+    column_hint:
+        The column header from which this value came (e.g. "Copies sold",
+        "Sales (millions)"). Used to determine whether values are already
+        in millions or in raw unit counts.
     """
     if not isinstance(value, str):
         try:
@@ -93,16 +102,26 @@ def _extract_sales_number(value: str) -> float | None:
     # Remove reference markers like [1], [a], etc.
     value = re.sub(r"\[.*?\]", "", value)
 
-    # Match "X million" or "X Million"
+    # Determine if the column header indicates values are already in millions
+    hint_lower = column_hint.lower()
+    column_is_millions = "million" in hint_lower
+
+    # Match "X million" or "X Million" in the value text itself
     match = re.search(r"([\d.]+)\s*million", value, re.IGNORECASE)
     if match:
         return float(match.group(1))
 
-    # Match plain number (assume it's already in millions if > 100, else raw units)
+    # Match plain number
     match = re.search(r"([\d.]+)", value)
     if match:
         num = float(match.group(1))
-        if num > 1_000_000:
+        if column_is_millions:
+            # Column says "millions" — value is already in millions
+            return num
+        # Column says "copies"/"units"/"sold" or unknown — detect by magnitude
+        # No single game has sold >= 1000 million copies, so any number >= 1000
+        # is almost certainly raw units (e.g. 30000000 = 30M copies)
+        if num >= 1000:
             return num / 1_000_000
         return num
 
@@ -211,7 +230,7 @@ def _process_table(
         if not name or name.lower() in ("nan", "", "total"):
             continue
 
-        sales = _extract_sales_number(str(row.get(sales_col, "")))
+        sales = _extract_sales_number(str(row.get(sales_col, "")), column_hint=str(sales_col))
         if sales is None or sales <= 0:
             continue
 
@@ -277,6 +296,28 @@ def collect_wikipedia(force: bool = False) -> Path:
     # Deduplicate: keep the entry with highest sales for each game name
     df = df.sort_values("wiki_sales_millions", ascending=False)
     df = df.drop_duplicates(subset=["wiki_name"], keep="first")
+
+    # Sanity check: no single game has sold > 600 million copies
+    suspicious = df[df["wiki_sales_millions"] > 600]
+    if len(suspicious) > 0:
+        print(f"[wikipedia] WARNING: {len(suspicious)} entries with >600M sales — likely unit parsing error")
+        for _, row in suspicious.iterrows():
+            print(f"  {row['wiki_name']}: {row['wiki_sales_millions']}M (page: {row['wiki_source_page']})")
+
+    # Validate against known titles
+    _KNOWN_SALES = {
+        "Grand Theft Auto V": (150, 250),
+        "Minecraft": (250, 400),
+        "Tetris": (400, 600),
+        "Wii Sports": (70, 100),
+    }
+    for title, (low, high) in _KNOWN_SALES.items():
+        match = df[df["wiki_name"].str.contains(title, case=False, na=False)]
+        if len(match) > 0:
+            val = match.iloc[0]["wiki_sales_millions"]
+            status = "OK" if low <= val <= high else "MISMATCH"
+            print(f"[wikipedia] Validation {status}: {title} = {val:.1f}M (expected {low}-{high}M)")
+
     df.to_csv(OUTPUT_PATH, index=False)
 
     print(f"[wikipedia] Saved {len(df):,} unique games → {OUTPUT_PATH}")

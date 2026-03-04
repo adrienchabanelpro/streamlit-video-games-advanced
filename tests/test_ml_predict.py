@@ -2,14 +2,19 @@
 
 import pandas as pd
 import pytest
-from ml.predict import NUMERICAL_FEATURES, get_features, lookup_cumulative
+from ml.predict import (
+    _V2_FEATURES,
+    get_feature_names,
+    get_features,
+    lookup_cumulative,
+)
 
 
-class TestNumericalFeatures:
-    def test_has_10_features(self):
-        assert len(NUMERICAL_FEATURES) == 10
+class TestFeatureNames:
+    def test_v2_features_has_10(self):
+        assert len(_V2_FEATURES) == 10
 
-    def test_contains_expected_features(self):
+    def test_v2_contains_expected(self):
         expected = {
             "Year",
             "meta_score",
@@ -22,7 +27,17 @@ class TestNumericalFeatures:
             "Cumulative_Sales_Platform",
             "Publisher_encoded",
         }
-        assert set(NUMERICAL_FEATURES) == expected
+        assert set(_V2_FEATURES) == expected
+
+    def test_get_feature_names_returns_list(self):
+        features = get_feature_names()
+        assert isinstance(features, list)
+        assert len(features) >= 10  # At least v2 features
+
+    def test_v2_features_subset_of_all(self):
+        features = get_feature_names()
+        for f in _V2_FEATURES:
+            assert f in features
 
 
 class TestLookupCumulative:
@@ -56,7 +71,8 @@ class TestGetFeatures:
     def test_all_engineered_columns_present(self, train_stats_fixture):
         inp = {"Year": 2015, "meta_score": 85.0, "user_review": 8.5}
         result = get_features(inp, train_stats_fixture, "Action", "PS4")
-        for col in NUMERICAL_FEATURES:
+        # Core v2 columns must always be present
+        for col in _V2_FEATURES:
             if col != "Publisher_encoded":
                 assert col in result.columns
 

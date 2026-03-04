@@ -304,8 +304,14 @@ def merge_all_sources(
         print(f"[merge-v3] Wikipedia: {len(wiki):,} rows")
 
         wiki_lookup = _build_lookup(wiki["wiki_name"])
+        # Wikipedia has only ~800 entries with very generic names (e.g. "Mario",
+        # "FIFA"). Using the default 85% threshold caused 788 entries to match
+        # 44K VGChartz rows (56:1 ratio).  A stricter 95% threshold ensures
+        # only high-confidence name matches and prevents mass misattribution of
+        # verified sales figures.
+        wiki_threshold = max(match_threshold, 95)
         wiki_matches = _fuzzy_match_col(
-            vg["Name"], wiki_lookup, threshold=match_threshold, label="wiki"
+            vg["Name"], wiki_lookup, threshold=wiki_threshold, label="wiki"
         )
 
         wiki_cols = [

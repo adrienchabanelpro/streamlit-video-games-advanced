@@ -10,11 +10,11 @@ All app code lives in `source/`. Data in `data/`. Models in `models/` and `repor
 ## When Adding New Models
 1. Save trained models to `models/` (sklearn: `.pkl` or `.joblib`, LightGBM: `.txt`)
 2. Save transformers/encoders alongside in `models/`
-3. Document in root `CLAUDE.md` under ML Models & Artifacts table
+3. Document in `.claude/CLAUDE.md` under Data & Models section
 
 ## When Adding New Datasets
 1. Place in `data/`
-2. Document schema and row count in root `CLAUDE.md`
+2. Document schema and row count in `.claude/CLAUDE.md`
 3. Add data loading with `@st.cache_data`
 
 ## When Adding New Data Sources

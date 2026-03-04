@@ -23,7 +23,7 @@ def what_if_page() -> None:
     )
 
     try:
-        lgb_model, xgb_model, cb_model = load_models()
+        models, meta_learner, version = load_models()
         train_stats = load_feature_means()
         scaler = load_numerical_transformer()
         encoder = load_target_encoder()
@@ -84,15 +84,15 @@ def what_if_page() -> None:
     if st.button("Run Analysis"):
         with st.spinner("Computing predictions..."):
             predictions = []
+            uncertainties = []
             for val in sweep_range:
                 meta = float(val) if sweep_var == "meta_score" else base_meta
                 user = float(val) if sweep_var == "user_review" else base_user
                 yr = int(val) if sweep_var == "Year" else year
 
-                pred = predict_single(
-                    lgb_model,
-                    xgb_model,
-                    cb_model,
+                pred, unc = predict_single(
+                    models,
+                    meta_learner,
                     scaler,
                     encoder,
                     train_stats,
@@ -102,8 +102,10 @@ def what_if_page() -> None:
                     yr,
                     meta,
                     user,
+                    version=version,
                 )
                 predictions.append(pred)
+                uncertainties.append(unc)
 
         # --- Plot ---
         fig = go.Figure()
@@ -118,6 +120,21 @@ def what_if_page() -> None:
             )
         )
 
+        # Uncertainty band
+        if any(u > 0 for u in uncertainties):
+            preds_arr = np.array(predictions)
+            unc_arr = np.array(uncertainties)
+            fig.add_trace(
+                go.Scatter(
+                    x=np.concatenate([sweep_range, sweep_range[::-1]]),
+                    y=np.concatenate([preds_arr + unc_arr, (preds_arr - unc_arr)[::-1]]),
+                    fill="toself",
+                    fillcolor="rgba(59,130,246,0.15)",
+                    line=dict(color="rgba(0,0,0,0)"),
+                    name="Uncertainty",
+                )
+            )
+
         # Mark the base value
         if sweep_var == "meta_score":
             base_val = base_meta
@@ -126,10 +143,9 @@ def what_if_page() -> None:
         else:
             base_val = year
 
-        base_pred = predict_single(
-            lgb_model,
-            xgb_model,
-            cb_model,
+        base_pred, _ = predict_single(
+            models,
+            meta_learner,
             scaler,
             encoder,
             train_stats,
@@ -139,6 +155,7 @@ def what_if_page() -> None:
             year,
             base_meta,
             base_user,
+            version=version,
         )
         fig.add_trace(
             go.Scatter(

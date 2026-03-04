@@ -15,9 +15,11 @@ import numpy as np
 import optuna
 import xgboost as xgb
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import ElasticNet
 from sklearn.metrics import r2_score
 from sklearn.model_selection import KFold
+from sklearn.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -123,16 +125,19 @@ def objective_cb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
 
 
 def objective_rf(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
-    """Optuna objective for Random Forest."""
-    model = RandomForestRegressor(
-        n_estimators=trial.suggest_int("n_estimators", 100, 500),
-        max_depth=trial.suggest_int("max_depth", 5, 30),
-        min_samples_split=trial.suggest_int("min_samples_split", 2, 20),
-        min_samples_leaf=trial.suggest_int("min_samples_leaf", 1, 10),
-        max_features=trial.suggest_float("max_features", 0.3, 1.0),
-        random_state=RANDOM_STATE,
-        n_jobs=-1,
-    )
+    """Optuna objective for Random Forest (with NaN imputation)."""
+    model = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("rf", RandomForestRegressor(
+            n_estimators=trial.suggest_int("n_estimators", 100, 500),
+            max_depth=trial.suggest_int("max_depth", 5, 30),
+            min_samples_split=trial.suggest_int("min_samples_split", 2, 20),
+            min_samples_leaf=trial.suggest_int("min_samples_leaf", 1, 10),
+            max_features=trial.suggest_float("max_features", 0.3, 1.0),
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+        )),
+    ])
     return _cv_score(model, X, y)
 
 
@@ -151,13 +156,16 @@ def objective_hgb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
 
 
 def objective_elastic(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
-    """Optuna objective for ElasticNet."""
-    model = ElasticNet(
-        alpha=trial.suggest_float("alpha", 1e-5, 10.0, log=True),
-        l1_ratio=trial.suggest_float("l1_ratio", 0.0, 1.0),
-        max_iter=5000,
-        random_state=RANDOM_STATE,
-    )
+    """Optuna objective for ElasticNet (with NaN imputation)."""
+    model = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("elastic", ElasticNet(
+            alpha=trial.suggest_float("alpha", 1e-5, 10.0, log=True),
+            l1_ratio=trial.suggest_float("l1_ratio", 0.0, 1.0),
+            max_iter=5000,
+            random_state=RANDOM_STATE,
+        )),
+    ])
     return _cv_score(model, X, y)
 
 
@@ -186,9 +194,12 @@ def train_cb(X: np.ndarray, y: np.ndarray, params: dict) -> cb.CatBoostRegressor
     return model
 
 
-def train_rf(X: np.ndarray, y: np.ndarray, params: dict) -> RandomForestRegressor:
-    """Train Random Forest with given hyperparameters."""
-    model = RandomForestRegressor(**params, random_state=RANDOM_STATE, n_jobs=-1)
+def train_rf(X: np.ndarray, y: np.ndarray, params: dict) -> Pipeline:
+    """Train Random Forest with NaN imputation pipeline."""
+    model = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("rf", RandomForestRegressor(**params, random_state=RANDOM_STATE, n_jobs=-1)),
+    ])
     model.fit(X, y)
     return model
 
@@ -200,8 +211,11 @@ def train_hgb(X: np.ndarray, y: np.ndarray, params: dict) -> HistGradientBoostin
     return model
 
 
-def train_elastic(X: np.ndarray, y: np.ndarray, params: dict) -> ElasticNet:
-    """Train ElasticNet with given hyperparameters."""
-    model = ElasticNet(**params, max_iter=5000, random_state=RANDOM_STATE)
+def train_elastic(X: np.ndarray, y: np.ndarray, params: dict) -> Pipeline:
+    """Train ElasticNet with NaN imputation pipeline."""
+    model = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("elastic", ElasticNet(**params, max_iter=5000, random_state=RANDOM_STATE)),
+    ])
     model.fit(X, y)
     return model

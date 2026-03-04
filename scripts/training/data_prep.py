@@ -38,11 +38,12 @@ DROP_COLS = [
 
 
 def load_dataset(path: Path | None = None) -> pd.DataFrame:
-    """Load the v3 dataset (or v2 fallback)."""
+    """Load the clean dataset (preferred), v3, or v2 fallback."""
     if path is None:
+        clean = DATA_DIR / "Ventes_jeux_video_clean.csv"
         v3 = DATA_DIR / "Ventes_jeux_video_v3.csv"
         v2 = DATA_DIR / "Ventes_jeux_video_final.csv"
-        path = v3 if v3.exists() else v2
+        path = clean if clean.exists() else (v3 if v3.exists() else v2)
 
     df = pd.read_csv(path)
     logger.info(f"Loaded {len(df):,} rows, {len(df.columns)} cols from {path.name}")
@@ -50,12 +51,23 @@ def load_dataset(path: Path | None = None) -> pd.DataFrame:
 
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Clean raw data: drop leakage, handle types, remove NaN target."""
+    """Clean raw data: drop leakage, handle types, remove NaN/zero target."""
     df = df.copy()
 
     # Drop rows missing target or key categoricals
     df = df.dropna(subset=[TARGET])
     df = df.dropna(subset=["Publisher", "Year"])
+
+    # Filter zero-sales rows: use quality tiers if available, else simple > 0
+    if "quality_tier" in df.columns:
+        valid_tiers = ["tier_1_verified", "tier_2_physical", "tier_3_marginal"]
+        before = len(df)
+        df = df[df["quality_tier"].isin(valid_tiers)]
+        logger.info(f"Quality tier filter: {before:,} → {len(df):,} rows")
+    else:
+        before = len(df)
+        df = df[df[TARGET] > 0]
+        logger.info(f"Zero-sales filter: {before:,} → {len(df):,} rows")
 
     # Convert Year to int
     df["Year"] = df["Year"].astype(int)
@@ -303,13 +315,35 @@ def engineer_features(df: pd.DataFrame, stats: dict) -> pd.DataFrame:
     if "igdb_follows" in df.columns:
         df["igdb_follows"] = pd.to_numeric(df["igdb_follows"], errors="coerce").fillna(0)
 
-    # Price features
+    # Price features (SteamSpy)
     if "steam_price" in df.columns:
         df["steam_price"] = pd.to_numeric(df["steam_price"], errors="coerce").fillna(0)
     if "steam_initialprice" in df.columns:
         df["steam_initialprice"] = pd.to_numeric(df["steam_initialprice"], errors="coerce").fillna(0)
     if "steam_review_pct" in df.columns:
         df["steam_review_pct"] = pd.to_numeric(df["steam_review_pct"], errors="coerce").fillna(0)
+
+    # --- v3 OpenCritic features ---
+    if "oc_top_critic_score" in df.columns:
+        df["oc_top_critic_score"] = pd.to_numeric(df["oc_top_critic_score"], errors="coerce").fillna(0)
+    if "oc_percent_recommended" in df.columns:
+        df["oc_percent_recommended"] = pd.to_numeric(df["oc_percent_recommended"], errors="coerce").fillna(0)
+
+    # Critic consensus: prefer OpenCritic, fallback to meta_score
+    if "critic_score_combined" in df.columns:
+        df["critic_score_combined"] = pd.to_numeric(df["critic_score_combined"], errors="coerce").fillna(0)
+
+    # --- v3 Steam Store features ---
+    if "steam_store_price_usd" in df.columns:
+        df["steam_store_price_usd"] = pd.to_numeric(df["steam_store_price_usd"], errors="coerce").fillna(0)
+    if "has_dlc" in df.columns:
+        df["has_dlc"] = pd.to_numeric(df["has_dlc"], errors="coerce").fillna(0)
+    if "steam_store_recommendations" in df.columns:
+        df["steam_store_recommendations"] = pd.to_numeric(df["steam_store_recommendations"], errors="coerce").fillna(0)
+
+    # --- v3 Quality flags ---
+    if "has_verified_sales" in df.columns:
+        df["has_verified_sales"] = pd.to_numeric(df["has_verified_sales"], errors="coerce").fillna(0)
 
     return df
 
@@ -334,7 +368,7 @@ def get_feature_columns(df: pd.DataFrame) -> list[str]:
         "publisher_avg_sales_prior", "publisher_game_count_prior", "publisher_hit_rate",
         "developer_avg_sales_prior",
         "competition_density", "genre_market_share",
-        # Steam enrichment
+        # Steam enrichment (SteamSpy)
         "review_count_total", "review_ratio", "playtime_avg", "concurrent_users",
         "steam_price", "steam_initialprice", "steam_review_pct",
         # RAWG enrichment
@@ -350,6 +384,12 @@ def get_feature_columns(df: pd.DataFrame) -> list[str]:
         # IGDB
         "has_franchise", "is_remake", "is_remaster",
         "igdb_total_rating", "igdb_hypes", "igdb_follows",
+        # OpenCritic
+        "oc_top_critic_score", "oc_percent_recommended", "critic_score_combined",
+        # Steam Store
+        "steam_store_price_usd", "has_dlc", "steam_store_recommendations",
+        # Quality flags
+        "has_verified_sales",
     ]
 
     features = list(core)

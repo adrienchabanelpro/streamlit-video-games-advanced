@@ -241,25 +241,33 @@ def _save_artifacts(
     import lightgbm as lgb
     import xgboost as xgb
 
-    # Save each base model
-    for model in base_models:
-        if isinstance(model, lgb.LGBMRegressor):
-            model.booster_.save_model(str(REPORTS_DIR / "model_v3_lgb.txt"))
-        elif isinstance(model, xgb.XGBRegressor):
-            model.save_model(str(MODELS_DIR / "model_v3_xgb.json"))
-        elif isinstance(model, cb.CatBoostRegressor):
-            model.save_model(str(MODELS_DIR / "model_v3_cb.cbm"))
+    # Save each base model (some may be wrapped in Pipeline)
+    from sklearn.pipeline import Pipeline
 
-    # Save sklearn-based models
+    def _unwrap(m):
+        """Get the inner model from a Pipeline, or return as-is."""
+        return m[-1] if isinstance(m, Pipeline) else m
+
+    for model in base_models:
+        inner = _unwrap(model)
+        if isinstance(inner, lgb.LGBMRegressor):
+            inner.booster_.save_model(str(REPORTS_DIR / "model_v3_lgb.txt"))
+        elif isinstance(inner, xgb.XGBRegressor):
+            inner.save_model(str(MODELS_DIR / "model_v3_xgb.json"))
+        elif isinstance(inner, cb.CatBoostRegressor):
+            inner.save_model(str(MODELS_DIR / "model_v3_cb.cbm"))
+
+    # Save sklearn-based models (joblib handles Pipeline correctly)
     from sklearn.ensemble import (
         HistGradientBoostingRegressor,
         RandomForestRegressor,
     )
 
     for model in base_models:
-        if isinstance(model, RandomForestRegressor):
+        inner = _unwrap(model)
+        if isinstance(inner, RandomForestRegressor):
             joblib.dump(model, MODELS_DIR / "model_v3_rf.joblib")
-        elif isinstance(model, HistGradientBoostingRegressor):
+        elif isinstance(inner, HistGradientBoostingRegressor):
             joblib.dump(model, MODELS_DIR / "model_v3_hgb.joblib")
 
     # Meta-learner

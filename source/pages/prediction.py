@@ -1,9 +1,8 @@
-"""Prediction page UI: single and batch predictions using the 3-model ensemble."""
+"""Prediction page UI: single and batch predictions using the model ensemble."""
 
-import numpy as np
 import pandas as pd
 import streamlit as st
-from ml.predict import NUMERICAL_FEATURES, get_features, is_log_transformed, prepare_for_prediction
+from ml.predict import predict_single
 
 
 def _get_input(train_stats: dict) -> tuple[str, str, str, dict]:
@@ -41,7 +40,12 @@ def _get_input(train_stats: dict) -> tuple[str, str, str, dict]:
 
 def prediction_page() -> None:
     """Render the prediction page."""
-    from prediction import load_feature_means, load_models
+    from prediction import (
+        load_feature_means,
+        load_models,
+        load_numerical_transformer,
+        load_target_encoder,
+    )
 
     st.title("Video Game Sales Prediction")
     st.caption(
@@ -49,11 +53,16 @@ def prediction_page() -> None:
     )
 
     try:
-        lgb_model, xgb_model, cb_model = load_models()
+        models, meta_learner, version = load_models()
         train_stats = load_feature_means()
+        scaler = load_numerical_transformer()
+        encoder = load_target_encoder()
     except Exception as e:
         st.error(f"Error loading model: {e}")
         return
+
+    version_label = f"v{version} — {'Stacking Ensemble' if version == 3 else 'Simple Average'}"
+    st.info(f"Model: {version_label}")
 
     # User inputs
     publisher_input, genre_input, platform_input, input_data = _get_input(train_stats)
@@ -61,24 +70,31 @@ def prediction_page() -> None:
     if st.sidebar.button("Predict"):
         with st.spinner("Computing prediction..."):
             try:
-                df_input = get_features(input_data, train_stats, genre_input, platform_input)
-                df_ready = prepare_for_prediction(df_input, publisher_input)
-
-                X = df_ready[NUMERICAL_FEATURES]
-                pred_lgb = lgb_model.predict(X)
-                pred_xgb = xgb_model.predict(X.values)
-                pred_cb = cb_model.predict(X.values)
-                user_pred = (pred_lgb + pred_xgb + pred_cb) / 3
-                if is_log_transformed():
-                    user_pred = np.expm1(user_pred)
+                pred, uncertainty = predict_single(
+                    models,
+                    meta_learner,
+                    scaler,
+                    encoder,
+                    train_stats,
+                    genre_input,
+                    platform_input,
+                    publisher_input,
+                    input_data["Year"],
+                    input_data["meta_score"],
+                    input_data["user_review"],
+                    version=version,
+                )
 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("Predicted Sales", f"{user_pred[0]:.4f} M")
+                    st.metric("Predicted Sales", f"{pred:.4f} M")
                 with col2:
                     st.metric("Genre", genre_input)
                 with col3:
                     st.metric("Platform", platform_input)
+
+                if uncertainty > 0:
+                    st.caption(f"Model uncertainty (inter-model std): {uncertainty:.4f} M")
 
                 export_df = pd.DataFrame(
                     {
@@ -88,7 +104,8 @@ def prediction_page() -> None:
                         "Year": [input_data["Year"]],
                         "meta_score": [input_data["meta_score"]],
                         "user_review": [input_data["user_review"]],
-                        "Predicted_Sales_M": [round(user_pred[0], 4)],
+                        "Predicted_Sales_M": [round(pred, 4)],
+                        "Uncertainty_M": [round(uncertainty, 4)],
                     }
                 )
                 st.download_button(
@@ -124,25 +141,27 @@ def prediction_page() -> None:
                     st.error(f"Missing columns: {', '.join(missing)}")
                 else:
                     results = []
+                    uncertainties = []
                     for _, row in batch_df.iterrows():
-                        inp = {
-                            "Year": int(row["Year"]),
-                            "meta_score": float(row["meta_score"]),
-                            "user_review": float(row["user_review"]),
-                        }
-                        df_feat = get_features(inp, train_stats, row["Genre"], row["Platform"])
-                        df_r = prepare_for_prediction(df_feat, row["Publisher"])
-                        X = df_r[NUMERICAL_FEATURES]
-                        p = (
-                            lgb_model.predict(X)
-                            + xgb_model.predict(X.values)
-                            + cb_model.predict(X.values)
-                        ) / 3
-                        if is_log_transformed():
-                            p = np.expm1(p)
-                        results.append(round(float(p[0]), 4))
+                        pred, unc = predict_single(
+                            models,
+                            meta_learner,
+                            scaler,
+                            encoder,
+                            train_stats,
+                            row["Genre"],
+                            row["Platform"],
+                            row["Publisher"],
+                            int(row["Year"]),
+                            float(row["meta_score"]),
+                            float(row["user_review"]),
+                            version=version,
+                        )
+                        results.append(round(pred, 4))
+                        uncertainties.append(round(unc, 4))
 
                     batch_df["Predicted_Sales_M"] = results
+                    batch_df["Uncertainty_M"] = uncertainties
                     st.dataframe(batch_df, use_container_width=True, hide_index=True)
                     st.download_button(
                         "Download Results (CSV)",
