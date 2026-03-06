@@ -8,7 +8,7 @@ without importing ``ml.predict`` directly.
 
 import streamlit as st
 from ml.predict import (
-    NUMERICAL_FEATURES,
+    get_feature_names,
     get_features,
     is_log_transformed,
     lookup_cumulative,
@@ -29,14 +29,14 @@ from ml.predict import (
     load_target_encoder as _load_target_encoder,
 )
 
-# Re-export for backwards compatibility (used by tests and other pages)
+# Backwards compat
 _lookup_cumulative = lookup_cumulative
-_NUMERICAL_FEATURES = NUMERICAL_FEATURES
+NUMERICAL_FEATURES = get_feature_names()
 
 
 @st.cache_resource
 def load_models():
-    """Load all 3 ensemble models (cached)."""
+    """Load ensemble models (cached). Returns (base_models, meta_learner, version)."""
     return _load_models()
 
 
@@ -69,6 +69,7 @@ from pages.prediction import prediction_page  # noqa: E402, F401
 
 __all__ = [
     "NUMERICAL_FEATURES",
+    "get_feature_names",
     "get_features",
     "load_feature_means",
     "load_models",

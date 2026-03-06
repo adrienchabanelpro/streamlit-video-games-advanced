@@ -1,51 +1,72 @@
 # Video Game Sales Prediction — Streamlit App
 
-## Quick Reference
+## Behavioral Rules
 
-- **Run:** `streamlit run source/main.py` → http://localhost:8501
-- **Language:** UI in French, docs in English, code mixed
-- **Python:** 3.11+ required
+- Do what has been asked; nothing more, nothing less
+- NEVER create files unless absolutely necessary — prefer editing existing files
+- NEVER save working files, text/mds, or tests to the root folder
+- ALWAYS read a file before editing it
+- ALWAYS run tests after code changes
+- ALWAYS verify the app starts before committing
+
+## Build & Test
+
+```bash
+make install-dev    # Install all deps (dev, training, NLP, CI)
+make run            # Streamlit app (cd source && streamlit run main.py)
+make test           # Full pytest suite
+make lint           # ruff check source/ scripts/ tests/
+make format         # ruff format source/ scripts/ tests/
+make train          # Run training pipeline
+make collect-data   # Run data collection pipeline
+```
+
+Single test: `python -m pytest tests/test_file.py::test_name -v`
+
+CI: GitHub Actions runs pytest on push/PR to `main` (Python 3.12). See `.github/workflows/ci.yml`.
 
 ## Architecture
 
-- `source/main.py` — Entry point, sidebar nav routing to 11 pages
-- `source/config.py` — Paths, constants, Plotly layout
-- `source/style.py` — CSS injection (modern dark slate theme, Inter + JetBrains Mono)
-- `source/components.py` — Shared UI components (metric_card, info_card, etc.)
-- `source/pages/` — 11 Streamlit page modules
-- `source/ml/predict.py` — Inference pipeline (loads models + transformers)
-- `source/analyse_avis_utilisateurs.py` — NLP sentiment analysis
-- `scripts/training/` — Modular v3 training pipeline (data_prep, models, stacking, evaluation)
-- `scripts/data_collection/` — 5-source collection (RAWG, IGDB, HLTB, SteamSpy, Kaggle) + merge
+**Entry point:** `source/main.py` — `st.navigation()` + `st.Page()` with lazy imports (`importlib.import_module`) to keep startup memory under 200 MB.
+
+**CWD quirk:** `make run` does `cd source && streamlit run main.py`, so imports in `source/` are relative to `source/` (e.g. `from config import ...`, not `from source.config`).
+
+**Core modules:**
+- `source/config.py` — Path constants (`ROOT`, `DATA_DIR`, `MODELS_DIR`), theme colors, `PLOTLY_LAYOUT`
+- `source/style.py` — CSS injection via `components.html()` JS into parent `<head>` (bypasses Streamlit sanitizer)
+- `source/components.py` — Shared UI: `metric_card`, `info_card`, `source_card`, `pipeline_step`, `section_header`
+- `source/ml/predict.py` — Streamlit-agnostic inference (v2: LGB+XGB+CB simple average)
+- `source/sentiment_analysis.py` — NLP sentiment (DistilBERT + BERT multilingual)
+
+**Pipelines:**
+- Training: `scripts/training/` — `data_prep.py` → `models.py` → `stacking.py` → `evaluation.py` via `run_training.py`
+- Data collection: `scripts/data_collection/` — 9 sources (RAWG, IGDB, HLTB, SteamSpy, Kaggle, Wikipedia, Steam Store, OpenCritic, Gamedatacrunch) + fuzzy merge
 
 ## Pages (11)
 
-| Page | File | Content |
-|------|------|---------|
-| Accueil | `home.py` | Dashboard overview, key metrics, pipeline diagram |
-| Sources de Donnees | `data_sources.py` | 5 sources documented, merge methodology, schema |
-| Analyse Exploratoire | `dataviz.py` | Interactive Plotly charts with global filters |
+| Page | File | Description |
+|------|------|-------------|
+| Home | `home.py` | Dashboard, key metrics, pipeline diagram |
+| Data Sources | `data_sources.py` | Sources, merge methodology, schema |
+| Exploratory Analysis | `dataviz.py` | Interactive Plotly charts with filters |
 | Feature Engineering | `feature_engineering.py` | Feature explanations |
-| Entrainement | `model_training.py` | Model comparison, stacking architecture, SHAP |
+| Training | `model_training.py` | Model comparison, stacking, SHAP |
 | Predictions | `prediction.py` | Single + batch prediction UI |
-| Interpretabilite | `interpretability.py` | SHAP beeswarm, feature descriptions |
-| What-If | `what_if.py` | Interactive variable sweep analysis |
-| Tendances | `market_insights.py` | Genre/platform/publisher analytics |
+| Interpretability | `interpretability.py` | SHAP beeswarm, feature descriptions |
+| What-If | `what_if.py` | Variable sweep analysis |
+| Market Trends | `market_insights.py` | Genre/platform/publisher analytics |
 | Sentiment NLP | `perception.py` | DistilBERT sentiment analysis |
-| A Propos | `about.py` | Methodology, tech stack, limitations |
+| About | `about.py` | Methodology, tech stack, limitations |
 
 ## Data & Models
 
-- `data/Ventes_jeux_video_v3.csv` — Unified dataset (5 sources merged)
+- `data/Ventes_jeux_video_v3.csv` — Unified dataset (multi-source merged)
 - `data/Ventes_jeux_video_final.csv` — v2 fallback (64K rows, VGChartz + SteamSpy)
-- `models/model_v3_*.{txt,json,cbm,joblib}` — v3 stacking ensemble (5 base + meta-learner)
-- `models/model_v2_*.{txt,json,cbm}` — v2 models (LGB + XGB + CB average)
-- `reports/training_log_v3.json` — v3 training metadata + metrics
+- **v2 (production):** LGB (`reports/model_v2_optuna.txt`) + XGB + CB simple average. Transformers: `models/scaler_v2.joblib`, `models/target_encoder_v2.joblib`, `models/feature_means_v2.joblib`
+- **v3 (stacking):** 5 base models + Ridge meta-learner. Artifacts: `models/model_v3_*`. Log: `reports/training_log_v3.json`
+- Model loading: `joblib.load()` for sklearn, `lgb.Booster(model_file=...)` for LightGBM
 
-## Key Conventions
+## Security
 
-- Streamlit CSS via `components.html()` JS injection (bypasses sanitizer)
-- Models: `joblib.load()` for sklearn, `lgb.Booster(model_file=...)` for LightGBM
-- Plotly for interactive charts (dark theme)
-- `@st.cache_data` for data loading, `@st.cache_resource` for model loading
-- See `IMPROVEMENT.md` for full roadmap
+- NEVER hardcode API keys or credentials in source files
+- NEVER commit .env files — use `.env.example` as template

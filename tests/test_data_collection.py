@@ -7,8 +7,10 @@ without requiring external API access.
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 from scripts.data_collection.collect_steamspy import compute_review_pct, parse_owners
+from scripts.data_collection.collect_wikipedia import _extract_sales_number
 from scripts.data_collection.download_kaggle import extract_year, normalize_platform
 from scripts.data_collection.merge_datasets import normalize_name
 
@@ -126,6 +128,56 @@ class TestComputeReviewPct:
 
     def test_string_numbers(self):
         assert compute_review_pct("80", "20") == 80.0
+
+
+# ---------------------------------------------------------------------------
+# _extract_sales_number (Wikipedia)
+# ---------------------------------------------------------------------------
+
+
+class TestExtractSalesNumber:
+    def test_million_text(self):
+        assert _extract_sales_number("30 million") == 30.0
+
+    def test_million_text_decimal(self):
+        assert _extract_sales_number("5.2 million") == 5.2
+
+    def test_raw_units_from_copies_column(self):
+        assert _extract_sales_number("1000000", column_hint="Copies sold") == 1.0
+
+    def test_raw_units_five_million(self):
+        assert _extract_sales_number("5000000", column_hint="Units sold") == 5.0
+
+    def test_already_millions_column(self):
+        assert _extract_sales_number("5.2", column_hint="Sales (millions)") == 5.2
+
+    def test_comma_formatted_raw(self):
+        assert _extract_sales_number("30,000,000", column_hint="Copies sold") == 30.0
+
+    def test_small_number_no_hint(self):
+        # Small plain number without hint — assumed to be in millions already
+        assert _extract_sales_number("5.2") == 5.2
+
+    def test_large_number_no_hint(self):
+        # Large number without hint — >= 1000, so treated as raw units
+        assert _extract_sales_number("45900000") == 45.9
+
+    def test_not_numeric(self):
+        assert _extract_sales_number("N/A") is None
+
+    def test_float_input(self):
+        assert _extract_sales_number(30.0) == 30.0
+
+    def test_none_input(self):
+        assert _extract_sales_number(None) is None
+
+    def test_reference_markers_stripped(self):
+        assert _extract_sales_number("30 million[1][a]") == 30.0
+
+    def test_boundary_exactly_1000(self):
+        # 1000 should be treated as raw units (no game sold 1000M copies)
+        result = _extract_sales_number("1000")
+        assert result == pytest.approx(0.001)
 
 
 # ---------------------------------------------------------------------------

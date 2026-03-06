@@ -1,0 +1,79 @@
+{
+  "timestamp": "2026-03-06T11:48:37.736602",
+  "input_file": "Ventes_jeux_video_v3.csv",
+  "input_rows": 64016,
+  "output_rows": 26136,
+  "min_quality_tier": "tier_4_marginal",
+  "tier_distribution": {
+    "tier_1_verified": 1082,
+    "tier_2_physical": 9473,
+    "tier_3_estimated": 13310,
+    "tier_4_marginal": 5996,
+    "tier_5_digital_proxy": 8,
+    "tier_6_no_sales": 34217
+  },
+  "filtered_tier_distribution": {
+    "tier_3_estimated": 9652,
+    "tier_2_physical": 9446,
+    "tier_4_marginal": 5957,
+    "tier_1_verified": 1081
+  },
+  "provenance_distribution": {
+    "vgchartz_physical": 9446,
+    "review_multiplier": 9053,
+    "vgchartz_marginal": 5957,
+    "wikipedia_verified": 1680
+  },
+  "confidence_distribution": {
+    "medium": 15010,
+    "high": 11126
+  },
+  "global_sales_stats": {
+    "non_zero_count": 17515,
+    "mean": 0.3766,
+    "median": 0.14
+  },
+  "estimated_total_sales_stats": {
+    "non_zero_count": 26136,
+    "mean": 1.9295,
+    "median": 0.1787
+  },
+  "feature_coverage": {
+    "SteamSpy": {
+      "count": 11374,
+      "pct": 43.5
+    },
+    "RAWG": {
+      "count": 25731,
+      "pct": 98.5
+    },
+    "IGDB": {
+      "count": 18570,
+      "pct": 71.1
+    },
+    "HLTB": {
+      "count": 16817,
+      "pct": 64.3
+    },
+    "OpenCritic": {
+      "count": 23931,
+      "pct": 91.6
+    },
+    "Wikipedia": {
+      "count": 1680,
+      "pct": 6.4
+    },
+    "Steam Store": {
+      "count": 21048,
+      "pct": 80.5
+    },
+    "Review Estimates": {
+      "count": 11346,
+      "pct": 43.4
+    },
+    "meta_score": {
+      "count": 4626,
+      "pct": 17.7
+    }
+  }
+}

@@ -15,38 +15,38 @@ from prediction import (
 
 def what_if_page() -> None:
     """What-if analysis page: sweep one variable and see impact on predictions."""
-    st.title("Analyse What-If")
-    st.caption("Explorez comment chaque variable influence les predictions de ventes")
+    st.title("What-If Analysis")
+    st.caption("Explore how each variable influences sales predictions")
     st.write(
-        "Selectionnez une configuration de base, puis choisissez une variable "
-        "a faire varier pour observer son impact en temps reel."
+        "Select a base configuration, then choose a variable "
+        "to sweep and observe its impact in real time."
     )
 
     try:
-        lgb_model, xgb_model, cb_model = load_models()
+        models, meta_learner, version = load_models()
         train_stats = load_feature_means()
         scaler = load_numerical_transformer()
         encoder = load_target_encoder()
     except Exception as e:
-        st.error(f"Erreur lors du chargement des modeles : {e}")
+        st.error(f"Error loading models: {e}")
         return
 
     st.markdown("---")
 
     # --- Base configuration ---
-    st.subheader("Configuration de base")
+    st.subheader("Base Configuration")
     col1, col2 = st.columns(2)
     with col1:
         genre = st.selectbox("Genre", train_stats["genres"])
-        platform = st.selectbox("Plateforme", train_stats["platforms"])
+        platform = st.selectbox("Platform", train_stats["platforms"])
     with col2:
-        publisher = st.selectbox("Editeur", train_stats["publishers"])
-        year = st.number_input("Annee", min_value=1980, max_value=2030, value=2015)
+        publisher = st.selectbox("Publisher", train_stats["publishers"])
+        year = st.number_input("Year", min_value=1980, max_value=2030, value=2015)
 
     col3, col4 = st.columns(2)
     with col3:
         base_meta = st.number_input(
-            "Score Metacritic (base)",
+            "Metacritic Score (base)",
             min_value=0.0,
             max_value=10.0,
             value=train_stats["meta_score_mean"],
@@ -54,7 +54,7 @@ def what_if_page() -> None:
         )
     with col4:
         base_user = st.number_input(
-            "Score utilisateur (base)",
+            "User Score (base)",
             min_value=0.0,
             max_value=10.0,
             value=train_stats["user_review_mean"],
@@ -64,35 +64,35 @@ def what_if_page() -> None:
     st.markdown("---")
 
     # --- Variable to sweep ---
-    st.subheader("Variable a analyser")
+    st.subheader("Variable to Analyze")
     sweep_var = st.selectbox(
-        "Quelle variable voulez-vous faire varier ?",
+        "Which variable do you want to sweep?",
         ["meta_score", "user_review", "Year"],
     )
 
     if sweep_var == "meta_score":
         sweep_range = np.linspace(0, 10, 50)
-        x_label = "Score Metacritic"
+        x_label = "Metacritic Score"
     elif sweep_var == "user_review":
         sweep_range = np.linspace(0, 10, 50)
-        x_label = "Score utilisateur"
+        x_label = "User Score"
     else:  # Year
         sweep_range = np.arange(1990, 2026)
-        x_label = "Annee"
+        x_label = "Year"
 
     # --- Compute predictions across sweep ---
-    if st.button("Lancer l'analyse"):
-        with st.spinner("Calcul des predictions..."):
+    if st.button("Run Analysis"):
+        with st.spinner("Computing predictions..."):
             predictions = []
+            uncertainties = []
             for val in sweep_range:
                 meta = float(val) if sweep_var == "meta_score" else base_meta
                 user = float(val) if sweep_var == "user_review" else base_user
                 yr = int(val) if sweep_var == "Year" else year
 
-                pred = predict_single(
-                    lgb_model,
-                    xgb_model,
-                    cb_model,
+                pred, unc = predict_single(
+                    models,
+                    meta_learner,
                     scaler,
                     encoder,
                     train_stats,
@@ -102,8 +102,10 @@ def what_if_page() -> None:
                     yr,
                     meta,
                     user,
+                    version=version,
                 )
                 predictions.append(pred)
+                uncertainties.append(unc)
 
         # --- Plot ---
         fig = go.Figure()
@@ -112,11 +114,26 @@ def what_if_page() -> None:
                 x=sweep_range,
                 y=predictions,
                 mode="lines+markers",
-                name="Ventes predites",
+                name="Predicted Sales",
                 line=dict(color=ACCENT, width=3),
                 marker=dict(size=4),
             )
         )
+
+        # Uncertainty band
+        if any(u > 0 for u in uncertainties):
+            preds_arr = np.array(predictions)
+            unc_arr = np.array(uncertainties)
+            fig.add_trace(
+                go.Scatter(
+                    x=np.concatenate([sweep_range, sweep_range[::-1]]),
+                    y=np.concatenate([preds_arr + unc_arr, (preds_arr - unc_arr)[::-1]]),
+                    fill="toself",
+                    fillcolor="rgba(59,130,246,0.15)",
+                    line=dict(color="rgba(0,0,0,0)"),
+                    name="Uncertainty",
+                )
+            )
 
         # Mark the base value
         if sweep_var == "meta_score":
@@ -126,10 +143,9 @@ def what_if_page() -> None:
         else:
             base_val = year
 
-        base_pred = predict_single(
-            lgb_model,
-            xgb_model,
-            cb_model,
+        base_pred, _ = predict_single(
+            models,
+            meta_learner,
             scaler,
             encoder,
             train_stats,
@@ -139,21 +155,22 @@ def what_if_page() -> None:
             year,
             base_meta,
             base_user,
+            version=version,
         )
         fig.add_trace(
             go.Scatter(
                 x=[base_val],
                 y=[base_pred],
                 mode="markers",
-                name="Valeur de base",
+                name="Base Value",
                 marker=dict(color=SECONDARY, size=14, symbol="star"),
             )
         )
 
         fig.update_layout(
-            title=f"Impact de {x_label} sur les ventes predites",
+            title=f"Impact of {x_label} on Predicted Sales",
             xaxis_title=x_label,
-            yaxis_title="Ventes predites (millions)",
+            yaxis_title="Predicted Sales (millions)",
             **PLOTLY_LAYOUT,
         )
 
@@ -162,13 +179,13 @@ def what_if_page() -> None:
         # --- Summary stats ---
         col_min, col_max, col_range = st.columns(3)
         with col_min:
-            st.metric("Prediction min", f"{min(predictions):.4f} M")
+            st.metric("Min Prediction", f"{min(predictions):.4f} M")
         with col_max:
-            st.metric("Prediction max", f"{max(predictions):.4f} M")
+            st.metric("Max Prediction", f"{max(predictions):.4f} M")
         with col_range:
-            st.metric("Amplitude", f"{max(predictions) - min(predictions):.4f} M")
+            st.metric("Range", f"{max(predictions) - min(predictions):.4f} M")
 
         st.caption(
-            f"Configuration : {genre} / {platform} / {publisher} / "
-            f"Annee={year} / Meta={base_meta:.0f} / User={base_user:.1f}"
+            f"Configuration: {genre} / {platform} / {publisher} / "
+            f"Year={year} / Meta={base_meta:.0f} / User={base_user:.1f}"
         )

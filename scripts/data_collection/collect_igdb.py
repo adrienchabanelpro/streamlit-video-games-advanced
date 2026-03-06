@@ -101,7 +101,6 @@ def collect_igdb(max_games: int = 200_000, force: bool = False) -> Path:
             f"themes.name,game_modes.name,player_perspectives.name,"
             f"franchises.name,involved_companies.company.name,"
             f"involved_companies.developer,involved_companies.publisher;"
-            f"where category = (0,8,9,10,11);"
             f"sort id asc;"
             f"limit {BATCH_SIZE};"
             f"offset {offset};"
