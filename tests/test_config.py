@@ -8,7 +8,6 @@ from config import (
     BG_CARD,
     BORDER,
     DATA_DIR,
-    IMAGES_DIR,
     MODELS_DIR,
     PLOTLY_LAYOUT,
     REPORTS_DIR,
@@ -36,14 +35,11 @@ class TestPaths:
     def test_reports_dir_exists(self):
         assert REPORTS_DIR.is_dir()
 
-    def test_images_dir_exists(self):
-        assert IMAGES_DIR.is_dir()
-
     def test_scripts_dir_exists(self):
         assert SCRIPTS_DIR.is_dir()
 
     def test_all_paths_are_pathlib(self):
-        for p in [ROOT, DATA_DIR, MODELS_DIR, REPORTS_DIR, IMAGES_DIR, SCRIPTS_DIR]:
+        for p in [ROOT, DATA_DIR, MODELS_DIR, REPORTS_DIR, SCRIPTS_DIR]:
             assert isinstance(p, Path)
 
 

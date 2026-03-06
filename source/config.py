@@ -9,7 +9,6 @@ ROOT: Path = Path(__file__).resolve().parent.parent
 DATA_DIR: Path = ROOT / "data"
 MODELS_DIR: Path = ROOT / "models"
 REPORTS_DIR: Path = ROOT / "reports"
-IMAGES_DIR: Path = ROOT / "images"
 SCRIPTS_DIR: Path = ROOT / "scripts"
 
 # ---------------------------------------------------------------------------
